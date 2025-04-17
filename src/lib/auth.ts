@@ -1,19 +1,20 @@
+
 import { create } from 'zustand';
 import { supabase } from './supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
-  id: number;
-  discord_username: string;
+  id: string;
+  username: string;
   balance: number;
-  key?: string;
+  keys?: string[];
   maps?: string[];
 }
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
-  login: (discordUsername: string) => Promise<boolean>;
+  login: (username: string) => Promise<boolean>;
   logout: () => void;
   loadUser: () => Promise<void>;
 }
@@ -21,7 +22,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
-  login: async (discordUsername: string) => {
+  login: async (username: string) => {
     try {
       set({ isLoading: true });
       
@@ -29,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_id')
         .select('*')
-        .eq('discord_username', discordUsername)
+        .eq('username', username)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
@@ -42,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const { data: newUser, error: insertError } = await supabase
           .from('user_id')
           .insert([
-            { discord_username: discordUsername, balance: 0 }
+            { username: username, balance: 0 }
           ])
           .select()
           .single();
@@ -64,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       // Save to local storage
-      localStorage.setItem('discord_username', discordUsername);
+      localStorage.setItem('username', username);
       return true;
 
     } catch (error) {
@@ -75,15 +76,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: () => {
-    localStorage.removeItem('discord_username');
+    localStorage.removeItem('username');
     set({ user: null });
   },
   loadUser: async () => {
     try {
       set({ isLoading: true });
-      const discordUsername = localStorage.getItem('discord_username');
+      const username = localStorage.getItem('username');
 
-      if (!discordUsername) {
+      if (!username) {
         set({ isLoading: false });
         return;
       }
@@ -91,12 +92,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data: user, error } = await supabase
         .from('user_id')
         .select('*')
-        .eq('discord_username', discordUsername)
+        .eq('username', username)
         .single();
 
       if (error) {
         console.error('Error loading user:', error);
-        localStorage.removeItem('discord_username');
+        localStorage.removeItem('username');
         set({ user: null, isLoading: false });
         return;
       }

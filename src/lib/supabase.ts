@@ -14,10 +14,10 @@ export const keyStorage = createClient(keyStorageUrl, keyStorageAnonKey);
 
 // Types from Supabase
 export interface UserData {
-  id: number;
-  discord_username: string;
+  id: string;
+  username: string;
   balance: number;
-  key?: string;
+  keys?: string[];
   maps?: string[];
   created_at: string;
 }
@@ -27,7 +27,7 @@ export interface MapData {
   name: string;
   price: number;
   function: string[];
-  gameid: number;
+  gameid: string;
 }
 
 export interface KeyData {

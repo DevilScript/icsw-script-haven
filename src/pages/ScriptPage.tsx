@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { supabase, MapData } from "@/lib/supabase";
 import { sendDiscordWebhook } from "@/lib/webhook";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -23,7 +22,7 @@ interface ScriptData {
   name: string;
   script: string;
   is_free: boolean;
-  game_id: number;
+  game_id: string;
   created_at: string;
 }
 
@@ -31,7 +30,7 @@ const ScriptPage = () => {
   const { user, isLoading: authLoading, loadUser } = useAuthStore();
   const { toast } = useToast();
   
-  const [maps, setMaps] = useState<{ name: string; game_id: number }[]>([]);
+  const [maps, setMaps] = useState<{ name: string; gameid: string }[]>([]);
   const [selectedMap, setSelectedMap] = useState<string>("");
   const [key, setKey] = useState<string>("");
   const [scriptContent, setScriptContent] = useState<string>("");
@@ -58,10 +57,7 @@ const ScriptPage = () => {
       }
       
       if (data) {
-        setMaps(data.map(item => ({ 
-          name: item.name, 
-          game_id: item.gameid 
-        })));
+        setMaps(data);
       }
     } catch (error) {
       console.error("Error fetching maps:", error);
@@ -80,27 +76,22 @@ const ScriptPage = () => {
     setSelectedMap(value);
     setScriptContent("");
     
-    // Check if the selected script is free
     try {
-      const selectedGameId = maps.find(map => map.name === value)?.game_id;
+      const selectedGameId = maps.find(map => map.name === value)?.gameid;
       
       if (!selectedGameId) return;
       
-      const { data, error } = await supabase
-        .from("scripts")
-        .select("is_free")
-        .eq("name", value)
-        .single();
-        
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error checking script:", error);
-        return;
-      }
+      // Since we don't have a scripts table available yet, let's simulate the behavior
+      // In a real implementation, you would query your scripts table
       
-      setIsFreeScript(data?.is_free || false);
+      // For demonstration, let's consider some maps as free
+      const freeMapNames = ["Demo Map", "Tutorial Map"];
+      const isFree = freeMapNames.includes(value);
+      
+      setIsFreeScript(isFree);
       
       // If it's free, get the script content immediately
-      if (data?.is_free) {
+      if (isFree) {
         fetchScriptContent(value, "");
       }
     } catch (error) {
@@ -115,7 +106,7 @@ const ScriptPage = () => {
     try {
       setIsLoading(true);
       
-      const selectedGameId = maps.find(map => map.name === mapName)?.game_id;
+      const selectedGameId = maps.find(map => map.name === mapName)?.gameid;
       
       if (!selectedGameId) {
         toast({
@@ -128,34 +119,23 @@ const ScriptPage = () => {
       
       // For free scripts, no key needed
       if (isFreeScript) {
-        const { data, error } = await supabase
-          .from("scripts")
-          .select("script")
-          .eq("name", mapName)
-          .eq("is_free", true)
-          .single();
-          
-        if (error) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load script content"
-          });
-          return;
-        }
+        // Simulate fetching a script
+        // In a real implementation, you would query your scripts table
+        const demoScript = `-- ${mapName} Demo Script\nlocal player = game:GetService("Players").LocalPlayer\nprint("Hello, " .. player.Name .. "!")\n\n-- This is a demo script for ${mapName}`;
         
-        if (data?.script) {
-          setScriptContent(data.script);
+        setScriptContent(demoScript);
           
-          // Log for free script view
+        // Log for free script view
+        if (user) {
           await sendDiscordWebhook(
             "Free script viewed", 
             {
-              "Discord User": user?.discord_username || "Guest",
+              "User": user.username || "Guest",
               "Script Name": mapName
             }
           );
         }
+        
         return;
       }
       
@@ -171,11 +151,11 @@ const ScriptPage = () => {
       
       // First check if the user owns this key
       if (user) {
-        // Check if user owns valid key
+        // Check if user owns this key
         const { data: userData, error: userError } = await supabase
           .from("user_id")
-          .select("key, maps")
-          .eq("discord_username", user.discord_username)
+          .select("keys, maps")
+          .eq("username", user.username)
           .single();
           
         if (userError) {
@@ -187,52 +167,37 @@ const ScriptPage = () => {
           return;
         }
         
-        // If user has a key, validate it has access to this map
-        if (userData?.key === scriptKey && userData.maps?.includes(mapName)) {
-          // Get script content
-          const { data: scriptData, error: scriptError } = await supabase
-            .from("scripts")
-            .select("script")
-            .eq("name", mapName)
-            .single();
-            
-          if (scriptError) {
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Failed to load script content"
-            });
-            return;
-          }
+        // If user has a key and has access to this map
+        if (userData?.keys?.includes(scriptKey) && userData.maps?.includes(mapName)) {
+          // Simulate getting script content
+          const paidScript = `-- ${mapName} Premium Script\nlocal player = game:GetService("Players").LocalPlayer\nlocal gameId = "${selectedGameId}"\n\nprint("Welcome to premium script for ${mapName}, " .. player.Name .. "!")\n\n-- Your premium features here...\n`;
           
-          if (scriptData?.script) {
-            setScriptContent(scriptData.script);
-            
-            // Log for paid script access
-            await supabase
-              .from("active_log")
-              .insert([
-                {
-                  discord_username: user.discord_username,
-                  script_name: mapName,
-                  key: scriptKey
-                }
-              ]);
-              
-            await sendDiscordWebhook(
-              "Script accessed with key", 
+          setScriptContent(paidScript);
+          
+          // Log for paid script access
+          await supabase
+            .from("active_log")
+            .insert([
               {
-                "Discord User": user.discord_username,
-                "Script Name": mapName,
-                "Key": scriptKey
+                username: user.username,
+                map: mapName,
+                key: scriptKey
               }
-            );
+            ]);
             
-            toast({
-              title: "Success",
-              description: "Script loaded successfully"
-            });
-          }
+          await sendDiscordWebhook(
+            "Script accessed with key", 
+            {
+              "User": user.username,
+              "Script Name": mapName,
+              "Key": scriptKey
+            }
+          );
+          
+          toast({
+            title: "Success",
+            description: "Script loaded successfully"
+          });
         } else {
           toast({
             variant: "destructive",
