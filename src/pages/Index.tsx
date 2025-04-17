@@ -3,10 +3,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
-import Contributors from "@/components/Contributors";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { FileText, ShoppingCart, CreditCard } from "lucide-react";
+import { Discord, CircleDot } from "lucide-react";
 
 const Index = () => {
   const { loadUser, user, isLoading } = useAuthStore();
@@ -33,72 +32,59 @@ const Index = () => {
 
           <div className="flex justify-center gap-4 pt-4">
             <Button 
-              onClick={() => navigate("/script")}
+              asChild
               className="bg-pink-transparent border border-pink-pastel hover:bg-pink-hover shine-effect"
               size="lg"
             >
-              <FileText className="mr-2" size={18} />
-              View Scripts
+              <a 
+                href="https://discord.gg/3CFe4KBks2" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center"
+              >
+                <Discord className="mr-2" size={18} />
+                Join Discord
+              </a>
             </Button>
             
-            <Button 
-              onClick={() => navigate("/store")}
-              variant="outline" 
-              size="lg"
-              className="bg-transparent border-pink-pastel hover:bg-pink-transparent shine-effect"
-            >
-              <ShoppingCart className="mr-2" size={18} />
-              Visit Store
-            </Button>
+            <div className="flex items-center rounded-full px-4 py-2 bg-black/40 border border-gray-700">
+              <CircleDot size={14} className="text-green-400 mr-2 animate-pulse" />
+              <span className="text-green-400 text-sm">Online</span>
+            </div>
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* Supported Maps & Executors */}
         <section className="py-12">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            <span className="relative">
-              Features
-              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></span>
-            </span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
             <GlassCard className="hover-scale">
-              <h3 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Premium Scripts</h3>
-              <p className="text-gray-300">Access high-quality scripts designed for optimal gameplay and features.</p>
+              <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Maps</h2>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-center">
+                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span>AnimeFruit</span>
+                </li>
+                <li className="flex items-center">
+                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span>Basketball Legends</span>
+                </li>
+              </ul>
             </GlassCard>
             
             <GlassCard className="hover-scale">
-              <h3 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Easy Payments</h3>
-              <p className="text-gray-300">Simple TrueMoney Wallet topup system for quick and hassle-free transactions.</p>
-            </GlassCard>
-            
-            <GlassCard className="hover-scale">
-              <h3 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Discord Support</h3>
-              <p className="text-gray-300">Join our active Discord community for instant support and updates.</p>
+              <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Executors</h2>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-center">
+                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span>Awp</span>
+                </li>
+                <li className="flex items-center">
+                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span>Wave</span>
+                </li>
+              </ul>
             </GlassCard>
           </div>
-        </section>
-
-        {/* Contributors Section */}
-        <Contributors />
-
-        {/* CTA Section */}
-        <section className="py-12 text-center">
-          <GlassCard className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-gray-300 mb-6">
-              Top up your account and get instant access to premium scripts
-            </p>
-            <Button
-              onClick={() => navigate("/topup")}
-              className="bg-pink-transparent border border-pink-pastel hover:bg-pink-hover shine-effect"
-              size="lg"
-            >
-              <CreditCard className="mr-2" size={18} />
-              Topup Now
-            </Button>
-          </GlassCard>
         </section>
       </div>
     </Layout>

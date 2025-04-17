@@ -1,26 +1,93 @@
 
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { CircleDot, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { NavLink } from "react-router-dom";
+import { HelpCircle, Menu, X, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/lib/auth";
+import { sendDiscordWebhook } from "@/lib/webhook";
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [helpMessage, setHelpMessage] = useState("");
+  const [discordTag, setDiscordTag] = useState("");
+  const { user } = useAuthStore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setShowNavbar(currentScrollY < lastScrollY || currentScrollY < 100);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  const handleHelpSubmit = async () => {
+    if (!helpMessage) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a message",
+      });
+      return;
+    }
+
+    try {
+      await sendDiscordWebhook("Help Request", {
+        "Discord Tag": user ? user.username : discordTag,
+        "Message": helpMessage
+      });
+
+      toast({
+        title: "Success",
+        description: "Your message has been sent",
+      });
+
+      setHelpDialogOpen(false);
+      setHelpMessage("");
+      setDiscordTag("");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message",
+      });
+    }
+  };
 
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Script", path: "/script" },
     { name: "Store", path: "/store" },
-    { name: "Support", path: "/support" },
     { name: "Topup", path: "/topup" },
-    { name: "Profile", path: "/profile" },
   ];
 
   return (
-    <header className="bg-black/30 backdrop-blur-md sticky top-0 z-50">
+    <header 
+      className={`fixed w-full bg-black/30 backdrop-blur-md z-50 transition-transform duration-300 ${
+        showNavbar ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
       <div className="container mx-auto px-4 py-4">
         <nav className="flex justify-between items-center">
+          {/* Brand and Navigation */}
           <div className="flex items-center">
             <div className="mr-10">
               <h1 className="text-2xl font-bold">
@@ -44,20 +111,20 @@ const Navbar = () => {
                   }
                 >
                   {item.name}
-                  {location.pathname === item.path && (
-                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-pink-DEFAULT animate-expand-width"></span>
-                  )}
                 </NavLink>
               ))}
             </div>
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-center rounded-full px-3 py-1 bg-black/40 border border-gray-700">
-              <span className="text-sm mr-2">Status:</span>
-              <span className="text-sm text-green-400">Online</span>
-              <CircleDot size={14} className="text-green-400 ml-1 animate-pulse" />
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setHelpDialogOpen(true)}
+              className="text-gray-300 hover:text-white"
+            >
+              <HelpCircle className="h-5 w-5" />
+            </Button>
             
             <Button 
               asChild
@@ -109,11 +176,14 @@ const Navbar = () => {
                 </NavLink>
               ))}
               
-              <div className="flex items-center px-4 py-2">
-                <span className="text-sm mr-2">Status:</span>
-                <span className="text-sm text-green-400">Online</span>
-                <CircleDot size={14} className="text-green-400 ml-1 animate-pulse" />
-              </div>
+              <Button
+                variant="ghost"
+                onClick={() => setHelpDialogOpen(true)}
+                className="text-gray-300 hover:text-white justify-start px-4"
+              >
+                <HelpCircle className="h-5 w-5 mr-2" />
+                Get Help
+              </Button>
               
               <Button 
                 asChild
@@ -133,6 +203,54 @@ const Navbar = () => {
           </div>
         )}
       </div>
+
+      {/* Help Dialog */}
+      <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-card">
+          <DialogHeader>
+            <DialogTitle>Need Help?</DialogTitle>
+            <DialogDescription>
+              Send us a message and we'll get back to you via Discord.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {!user && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="discordTag" className="text-right">
+                  Discord Tag
+                </Label>
+                <Input
+                  id="discordTag"
+                  placeholder="username#1234"
+                  className="col-span-3"
+                  value={discordTag}
+                  onChange={(e) => setDiscordTag(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="message" className="text-right">
+                Message
+              </Label>
+              <Textarea
+                id="message"
+                placeholder="How can we help?"
+                className="col-span-3"
+                value={helpMessage}
+                onChange={(e) => setHelpMessage(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={handleHelpSubmit}
+              className="bg-pink-transparent border border-pink-pastel hover:bg-pink-hover"
+            >
+              Send Message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
