@@ -1,7 +1,6 @@
-
+import { create } from 'zustand';
 import { supabase } from './supabase';
 import { useToast } from '@/hooks/use-toast';
-import { create } from 'zustand';
 
 interface User {
   id: number;
