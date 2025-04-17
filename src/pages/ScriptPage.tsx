@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
@@ -14,17 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileLock, FileCheck } from "lucide-react";
+import { Loader2, FileLock, FileCheck, Copy, Check } from "lucide-react";
 import { CopyBlock, dracula } from "react-code-blocks";
-
-interface ScriptData {
-  id: number;
-  name: string;
-  script: string;
-  is_free: boolean;
-  game_id: string;
-  created_at: string;
-}
 
 const ScriptPage = () => {
   const { user, isLoading: authLoading, loadUser } = useAuthStore();
@@ -33,15 +25,25 @@ const ScriptPage = () => {
   const [maps, setMaps] = useState<{ name: string; gameid: string }[]>([]);
   const [selectedMap, setSelectedMap] = useState<string>("");
   const [key, setKey] = useState<string>("");
+  const [userKey, setUserKey] = useState<string>("");
   const [scriptContent, setScriptContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isFreeScript, setIsFreeScript] = useState(false);
+  const [copied, setCopied] = useState(false);
   
-  // Load maps data
+  // Load maps data and user information
   useEffect(() => {
     loadUser();
     fetchMaps();
   }, []);
+
+  // Check if user has a key when they log in
+  useEffect(() => {
+    if (user && user.keys && user.keys.length > 0) {
+      setUserKey(user.keys[0]);
+      setKey(user.keys[0]);
+    }
+  }, [user]);
 
   // Fetch available maps from Supabase
   const fetchMaps = async () => {
@@ -93,6 +95,9 @@ const ScriptPage = () => {
       // If it's free, get the script content immediately
       if (isFree) {
         fetchScriptContent(value, "");
+      } else if (user && user.keys && user.keys.length > 0 && user.maps?.includes(value)) {
+        // If user has the map in their purchased maps, auto-fill the key
+        setKey(user.keys[0]);
       }
     } catch (error) {
       console.error("Error checking if script is free:", error);
@@ -169,8 +174,8 @@ const ScriptPage = () => {
         
         // If user has a key and has access to this map
         if (userData?.keys?.includes(scriptKey) && userData.maps?.includes(mapName)) {
-          // Simulate getting script content
-          const paidScript = `-- ${mapName} Premium Script\nlocal player = game:GetService("Players").LocalPlayer\nlocal gameId = "${selectedGameId}"\n\nprint("Welcome to premium script for ${mapName}, " .. player.Name .. "!")\n\n-- Your premium features here...\n`;
+          // Generate script content with user's key
+          const paidScript = `-- ${mapName} Premium Script\n\ngetgenv().key = "${scriptKey}"\nloadstring(game:HttpGet('https://raw.githubusercontent.com/DevilScript/Scripts/refs/heads/main/MoyxHubs'))()\n\n-- Your premium features here...\n`;
           
           setScriptContent(paidScript);
           
@@ -228,6 +233,20 @@ const ScriptPage = () => {
     fetchScriptContent(selectedMap, key);
   };
 
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(scriptContent);
+    setCopied(true);
+    
+    toast({ 
+      title: "Copied!", 
+      description: "Script copied to clipboard" 
+    });
+    
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
@@ -238,19 +257,22 @@ const ScriptPage = () => {
           </span>
         </h1>
         
-        <GlassCard className="mb-8">
-          <div className="space-y-6">
+        <GlassCard className="mb-8 feature-card relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT/50 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT/30 to-transparent"></div>
+          
+          <div className="space-y-6 relative z-10">
             <div>
-              <label className="block text-sm font-medium mb-2">Select Map</label>
+              <label className="block text-sm font-medium mb-3 text-pink-pastel">Select Map</label>
               <Select
                 value={selectedMap}
                 onValueChange={handleMapSelect}
                 disabled={isLoading}
               >
-                <SelectTrigger className="bg-black/30 border-pink-pastel focus:ring-pink-DEFAULT">
+                <SelectTrigger className="bg-black/50 border-pink-pastel/40 focus:ring-pink-DEFAULT h-12">
                   <SelectValue placeholder="Select a map" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1a1f] border-pink-pastel">
+                <SelectContent className="bg-[#1a1a1f] border-pink-pastel/40">
                   {maps.map(map => (
                     <SelectItem 
                       key={map.name} 
@@ -265,14 +287,14 @@ const ScriptPage = () => {
             </div>
             
             {selectedMap && !isFreeScript && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Enter Your Script Key</label>
+              <div className="animate-fade-in">
+                <label className="block text-sm font-medium mb-3 text-pink-pastel">Enter Your Script Key</label>
                 <Input
                   type="text"
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
-                  placeholder="Your script key"
-                  className="bg-black/30 border-pink-pastel focus:ring-pink-DEFAULT"
+                  placeholder="Moyx-xxxxxxxxxx"
+                  className="bg-black/50 border-pink-pastel/40 focus:ring-pink-DEFAULT h-12"
                 />
               </div>
             )}
@@ -281,16 +303,16 @@ const ScriptPage = () => {
               <Button
                 onClick={handleViewScript}
                 disabled={isLoading || !selectedMap || (!isFreeScript && !key)}
-                className="w-full bg-pink-transparent hover:bg-pink-hover border border-pink-pastel shine-effect"
+                className="w-full h-12 button-3d hover:bg-pink-hover border border-pink-pastel shine-effect"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Loading...
                   </>
                 ) : (
                   <>
-                    <FileLock className="mr-2 h-4 w-4" />
+                    <FileLock className="mr-2 h-5 w-5" />
                     Access Script
                   </>
                 )}
@@ -298,9 +320,11 @@ const ScriptPage = () => {
             )}
             
             {selectedMap && isFreeScript && !scriptContent && (
-              <div className="text-center py-2">
-                <FileCheck className="h-6 w-6 mx-auto text-green-400 mb-2" />
-                <p className="text-green-400">This is a free script - no key required!</p>
+              <div className="text-center py-4 animate-fade-in">
+                <div className="p-4 rounded-lg bg-black/20 border border-green-400/20">
+                  <FileCheck className="h-6 w-6 mx-auto text-green-400 mb-3" />
+                  <p className="text-green-400">This is a free script - no key required!</p>
+                </div>
               </div>
             )}
           </div>
@@ -308,10 +332,28 @@ const ScriptPage = () => {
         
         {scriptContent && (
           <GlassCard className="animate-fade-in">
-            <h3 className="text-xl font-semibold mb-4">
-              Script for {selectedMap}
+            <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <span>Script for {selectedMap}</span>
+              <Button
+                onClick={handleCopyScript}
+                variant="outline"
+                size="sm"
+                className="ml-auto bg-black/30 hover:bg-pink-transparent border border-pink-pastel/40"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
             </h3>
-            <div className="rounded-md overflow-hidden mb-4">
+            <div className="script-container mb-4">
               <CopyBlock
                 text={scriptContent}
                 language="lua"
@@ -319,18 +361,6 @@ const ScriptPage = () => {
                 codeBlock
                 wrapLongLines
               />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(scriptContent);
-                  toast({ title: "Copied!", description: "Script copied to clipboard" });
-                }}
-                variant="outline"
-                className="bg-pink-transparent hover:bg-pink-hover border border-pink-pastel"
-              >
-                Copy to Clipboard
-              </Button>
             </div>
           </GlassCard>
         )}

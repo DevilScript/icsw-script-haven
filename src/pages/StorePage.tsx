@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
@@ -16,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { 
   Loader2, 
   ShoppingCart, 
-  Key, 
   AlertCircle
 } from "lucide-react";
 
@@ -118,78 +118,129 @@ const StorePage = () => {
     setIsBuying(true);
     
     try {
-      // Get a key from key storage
-      const { data: keyData, error: keyError } = await keyStorage
-        .from("keys")
-        .select("*")
-        .eq("status", "Pending")
-        .limit(1)
+      // First check if the user already has a key
+      const { data: userData, error: userError } = await supabase
+        .from("user_id")
+        .select("keys, maps")
+        .eq("username", user.username)
         .single();
         
-      if (keyError) {
-        toast({
-          variant: "destructive",
-          title: "Purchase Failed",
-          description: "No keys available or error fetching key."
-        });
-        return;
+      if (userError && userError.code !== 'PGRST116') {
+        throw userError;
       }
       
-      // Update the key status and map information
-      const key = keyData as KeyData;
+      let userKey = "";
+      let updatedMaps: string[] = [];
+      let updatedKeys: string[] = [];
       
-      // Update maps array
-      let updatedMaps = [...(key.maps || [])];
-      if (!updatedMaps.includes(selectedMapData.name)) {
-        updatedMaps.push(selectedMapData.name);
+      // If user already has keys, update them
+      if (userData && userData.keys && userData.keys.length > 0) {
+        userKey = userData.keys[0]; // Use the first key
+        updatedKeys = userData.keys;
+        updatedMaps = [...(userData.maps || [])];
+        
+        if (!updatedMaps.includes(selectedMapData.name)) {
+          updatedMaps.push(selectedMapData.name);
+        }
+        
+        // Update the key in key storage to add the new map and place ID
+        const { data: keyData, error: keyFetchError } = await keyStorage
+          .from("keys")
+          .select("*")
+          .eq("key", userKey)
+          .single();
+          
+        if (keyFetchError) {
+          throw keyFetchError;
+        }
+        
+        const key = keyData as KeyData;
+        
+        // Update maps array for the existing key
+        let keyMaps = [...(key.maps || [])];
+        if (!keyMaps.includes(selectedMapData.name)) {
+          keyMaps.push(selectedMapData.name);
+        }
+        
+        // Update place IDs array
+        let updatedPlaceIds = [...(key.allowed_place_ids || [])];
+        const gameIdNumber = parseInt(selectedMapData.gameid);
+        if (!isNaN(gameIdNumber) && !updatedPlaceIds.includes(gameIdNumber)) {
+          updatedPlaceIds.push(gameIdNumber);
+        }
+        
+        // Update the key in key storage
+        const { error: updateKeyError } = await keyStorage
+          .from("keys")
+          .update({
+            maps: keyMaps,
+            allowed_place_ids: updatedPlaceIds
+          })
+          .eq("key", userKey);
+          
+        if (updateKeyError) {
+          throw updateKeyError;
+        }
+      }
+      // User doesn't have a key yet, get a new one
+      else {
+        // Get a key from key storage
+        const { data: keyData, error: keyError } = await keyStorage
+          .from("keys")
+          .select("*")
+          .eq("status", "Pending")
+          .limit(1)
+          .single();
+          
+        if (keyError) {
+          toast({
+            variant: "destructive",
+            title: "Purchase Failed",
+            description: "No keys available or error fetching key."
+          });
+          return;
+        }
+        
+        // Update the key status and map information
+        const key = keyData as KeyData;
+        userKey = key.key;
+        updatedKeys = [userKey];
+        updatedMaps = [selectedMapData.name];
+        
+        // Update place IDs array
+        let updatedPlaceIds: number[] = [];
+        const gameIdNumber = parseInt(selectedMapData.gameid);
+        if (!isNaN(gameIdNumber)) {
+          updatedPlaceIds.push(gameIdNumber);
+        }
+        
+        // Update key in key storage
+        const { error: updateKeyError } = await keyStorage
+          .from("keys")
+          .update({
+            status: "PreActive",
+            maps: updatedMaps,
+            allowed_place_ids: updatedPlaceIds
+          })
+          .eq("id", key.id);
+        
+        if (updateKeyError) {
+          throw updateKeyError;
+        }
       }
       
-      // Update place IDs array - convert gameid to number if needed
-      let updatedPlaceIds = [...(key.allowed_place_ids || [])];
-      
-      // Parse gameid to number if needed for allowed_place_ids
-      // We're keeping it as a string in our code, but handling it properly for the API
-      const gameIdNumber = parseInt(selectedMapData.gameid);
-      if (!isNaN(gameIdNumber) && !updatedPlaceIds.includes(gameIdNumber)) {
-        updatedPlaceIds.push(gameIdNumber);
-      }
-      
-      // Update key in key storage
-      const { error: updateKeyError } = await keyStorage
-        .from("keys")
-        .update({
-          status: "PreActive",
-          maps: updatedMaps,
-          allowed_place_ids: updatedPlaceIds
-        })
-        .eq("id", key.id);
-      
-      if (updateKeyError) {
-        toast({
-          variant: "destructive",
-          title: "Purchase Failed",
-          description: "Error updating key status."
-        });
-        return;
-      }
-      
-      // Update user balance
+      // Update user balance and store the key/maps info
       const { error: balanceError } = await supabase
         .from("user_id")
         .update({
           balance: user.balance - selectedMapData.price,
-          key: key.key,
+          keys: updatedKeys,
           maps: updatedMaps
         })
         .eq("username", user.username);
       
       if (balanceError) {
-        toast({
-          variant: "destructive",
-          title: "Purchase Failed",
-          description: "Error updating user balance."
-        });
-        return;
+        throw balanceError;
       }
       
       // Log purchase
@@ -199,7 +250,7 @@ const StorePage = () => {
           username: user.username,
           map: selectedMapData.name,
           price: selectedMapData.price,
-          key: key.key,
+          key: userKey,
           success: true
         }]);
       
@@ -210,7 +261,7 @@ const StorePage = () => {
           "Discord User": user.username,
           "Map Name": selectedMapData.name,
           "Price": selectedMapData.price,
-          "Key": key.key
+          "Key": userKey
         }
       );
       
@@ -220,7 +271,7 @@ const StorePage = () => {
       
       toast({
         title: "Purchase Successful!",
-        description: `You have purchased ${selectedMapData.name} script. Your key: ${key.key}`
+        description: `You have purchased ${selectedMapData.name} script. Your key: ${userKey}`
       });
     } catch (error) {
       console.error("Purchase error:", error);
@@ -247,16 +298,16 @@ const StorePage = () => {
         <GlassCard className="mb-8 feature-card">
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Select Map</label>
+              <label className="block text-sm font-medium mb-3 text-pink-pastel">Select Map</label>
               <Select
                 value={selectedMap}
                 onValueChange={handleMapSelect}
                 disabled={isLoading}
               >
-                <SelectTrigger className="bg-black/30 border-pink-pastel focus:ring-pink-DEFAULT">
+                <SelectTrigger className="bg-black/40 border-pink-pastel/40 focus:ring-pink-DEFAULT h-12">
                   <SelectValue placeholder="Select a map" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1a1f] border-pink-pastel">
+                <SelectContent className="bg-[#1a1a1f] border-pink-pastel/40">
                   {maps.map(map => (
                     <SelectItem 
                       key={map.name} 
@@ -271,8 +322,8 @@ const StorePage = () => {
             </div>
             
             {selectedMapData && (
-              <div className="p-6 bg-black/30 rounded-lg animate-fade-in backdrop-blur-md border-t border-b border-pink-pastel/20">
-                <div className="flex justify-between items-start mb-6">
+              <div className="p-6 bg-[#1a1a22]/70 rounded-lg animate-fade-in backdrop-blur-md border-t border-b border-pink-pastel/20">
+                <div className="flex flex-wrap justify-between items-start mb-6 gap-4">
                   <h3 className="text-2xl font-semibold text-pink-DEFAULT">{selectedMapData.name}</h3>
                   <div className="text-right">
                     <p className="text-sm text-gray-400">Price</p>
@@ -281,7 +332,7 @@ const StorePage = () => {
                 </div>
                 
                 <div className="mb-6">
-                  <p className="text-gray-400 text-sm mb-2">Functions</p>
+                  <p className="text-gray-400 text-sm mb-2">Features</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedMapData.function.map((func, index) => (
                       <span 
@@ -294,9 +345,9 @@ const StorePage = () => {
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-4">
                   <div className="text-sm text-gray-400">
-                    Keys in Stock: <span className={keyCount > 0 ? "text-green-400" : "text-red-400"}>{keyCount}</span>
+                    In Stock: <span className={keyCount > 0 ? "text-green-400" : "text-red-400"}>{keyCount > 0 ? "Available" : "Out of Stock"}</span>
                   </div>
                   
                   {user ? (

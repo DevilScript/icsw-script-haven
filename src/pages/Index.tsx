@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Link, Activity, Instagram } from "lucide-react";
+import { Link, Activity } from "lucide-react";
 import Contributors from "@/components/Contributors";
 
 const Index = () => {
@@ -24,7 +24,6 @@ const Index = () => {
           <h1 className="text-5xl font-bold">
             <span className="text-white">ICS</span>
             <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
-            <span className="text-white"> Script Haven</span>
           </h1>
           <div className="w-40 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto"></div>
           <p className="text-gray-300 text-xl max-w-2xl mx-auto">
@@ -33,19 +32,12 @@ const Index = () => {
 
           <div className="flex justify-center gap-4 pt-4">
             <Button 
-              asChild
-              className="button-3d px-6 py-6 text-lg rounded-md shine-effect"
+              onClick={() => navigate("/auth")}
+              className="button-3d px-8 py-7 text-lg rounded-md shine-effect bg-[#222] hover:bg-[#2a2a2a] border border-pink-pastel"
               size="lg"
             >
-              <a 
-                href="https://discord.gg/3CFe4KBks2" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center"
-              >
-                <Link className="mr-2" size={20} />
-                Join Discord
-              </a>
+              <Link className="mr-2" size={20} />
+              Login
             </Button>
             
             <div className="status-indicator">
@@ -54,6 +46,9 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {/* Contributors Section - Moved up */}
+        <Contributors />
 
         {/* Supported Maps & Executors */}
         <section className="py-12">
@@ -87,9 +82,6 @@ const Index = () => {
             </GlassCard>
           </div>
         </section>
-
-        {/* Contributors Section */}
-        <Contributors />
       </div>
     </Layout>
   );

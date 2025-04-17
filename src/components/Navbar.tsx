@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { HelpCircle, Menu, X, LogIn } from "lucide-react";
+import { HelpCircle, Menu, X, LogIn, History, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -81,7 +81,7 @@ const Navbar = () => {
 
   return (
     <header 
-      className={`fixed w-full bg-black/30 backdrop-blur-md z-50 transition-transform duration-300 ${
+      className={`fixed w-full bg-black/40 backdrop-blur-md z-50 transition-transform duration-300 ${
         showNavbar ? "translate-y-0" : "-translate-y-full"
       }`}
     >
@@ -113,6 +113,42 @@ const Navbar = () => {
                   {item.name}
                 </NavLink>
               ))}
+              
+              {user && (
+                <>
+                  <NavLink
+                    to="/history"
+                    className={({ isActive }) =>
+                      `py-1 relative shine-effect ${
+                        isActive
+                          ? "text-[rgb(255,179,209)]"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-1">
+                      <History size={14} />
+                      <span>History</span>
+                    </div>
+                  </NavLink>
+                  
+                  <NavLink
+                    to="/reset-hwid"
+                    className={({ isActive }) =>
+                      `py-1 relative shine-effect ${
+                        isActive
+                          ? "text-[rgb(255,179,209)]"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-1">
+                      <Key size={14} />
+                      <span>Reset-HWID</span>
+                    </div>
+                  </NavLink>
+                </>
+              )}
             </div>
           </div>
 
@@ -121,14 +157,14 @@ const Navbar = () => {
               variant="ghost"
               size="icon"
               onClick={() => setHelpDialogOpen(true)}
-              className="text-gray-300 hover:text-white"
+              className="text-gray-300 hover:text-white hover:bg-pink-transparent/10"
             >
               <HelpCircle className="h-5 w-5" />
             </Button>
             
             <Button 
               asChild
-              className="button-3d shine-effect"
+              className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
               size="sm"
             >
               <NavLink to="/auth">
@@ -172,6 +208,40 @@ const Navbar = () => {
                 </NavLink>
               ))}
               
+              {user && (
+                <>
+                  <NavLink
+                    to="/history"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md flex items-center ${
+                        isActive
+                          ? "bg-pink-transparent text-pink-DEFAULT"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    History
+                  </NavLink>
+                  
+                  <NavLink
+                    to="/reset-hwid"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md flex items-center ${
+                        isActive
+                          ? "bg-pink-transparent text-pink-DEFAULT"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Reset-HWID
+                  </NavLink>
+                </>
+              )}
+              
               <Button
                 variant="ghost"
                 onClick={() => setHelpDialogOpen(true)}
@@ -183,10 +253,10 @@ const Navbar = () => {
               
               <Button 
                 asChild
-                className="mx-4 button-3d shine-effect"
+                className="mx-4 button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
                 size="sm"
               >
-                <NavLink to="/auth">
+                <NavLink to="/auth" onClick={() => setIsOpen(false)}>
                   <LogIn className="mr-2 h-4 w-4" />
                   Login
                 </NavLink>
@@ -198,36 +268,39 @@ const Navbar = () => {
 
       {/* Help Dialog */}
       <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#1a1a1f] border border-pink-pastel">
+        <DialogContent className="sm:max-w-[425px] help-dialog">
           <DialogHeader>
-            <DialogTitle>Need Help?</DialogTitle>
-            <DialogDescription>
-              Send us a message and we'll get back to you via Discord.
+            <DialogTitle className="text-2xl text-pink-DEFAULT flex items-center">
+              <HelpCircle className="mr-2 h-5 w-5" />
+              Need Assistance?
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">
+              We're here to help! Send us your question and we'll respond via Discord.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-6">
             {!user && (
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="discordTag" className="text-right">
+                <Label htmlFor="discordTag" className="text-right text-pink-pastel">
                   Discord Tag
                 </Label>
                 <Input
                   id="discordTag"
                   placeholder="username#1234"
-                  className="col-span-3 bg-black/30 border-pink-pastel"
+                  className="col-span-3 key-input"
                   value={discordTag}
                   onChange={(e) => setDiscordTag(e.target.value)}
                 />
               </div>
             )}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="message" className="text-right">
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="message" className="text-right text-pink-pastel mt-2">
                 Message
               </Label>
               <Textarea
                 id="message"
-                placeholder="How can we help?"
-                className="col-span-3 bg-black/30 border-pink-pastel"
+                placeholder="How can we help you today?"
+                className="col-span-3 key-input min-h-[120px]"
                 value={helpMessage}
                 onChange={(e) => setHelpMessage(e.target.value)}
               />
@@ -236,7 +309,7 @@ const Navbar = () => {
           <DialogFooter>
             <Button 
               onClick={handleHelpSubmit}
-              className="button-3d shine-effect"
+              className="button-3d shine-effect w-full sm:w-auto"
             >
               Send Message
             </Button>

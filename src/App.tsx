@@ -11,6 +11,8 @@ import StorePage from "./pages/StorePage";
 import TopupPage from "./pages/TopupPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import HistoryPage from "./pages/HistoryPage";
+import ResetHWIDPage from "./pages/ResetHWIDPage";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => {
             <Route path="/store" element={<StorePage />} />
             <Route path="/topup" element={<TopupPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/reset-hwid" element={<ResetHWIDPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
