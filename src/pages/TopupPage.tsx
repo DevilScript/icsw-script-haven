@@ -36,7 +36,7 @@ const TopupPage = () => {
       const { data, error } = await supabase
         .from("balance_log")
         .select("*")
-        .eq("discord_username", user.discord_username)
+        .eq("username", user.username)
         .order("created_at", { ascending: false })
         .limit(5);
         
@@ -91,7 +91,7 @@ const TopupPage = () => {
         .update({
           balance: (user.balance || 0) + creditAmount
         })
-        .eq("discord_username", user.discord_username);
+        .eq("username", user.username);
         
       if (updateError) throw updateError;
       
@@ -99,7 +99,7 @@ const TopupPage = () => {
       const { error: logError } = await supabase
         .from("balance_log")
         .insert([{
-          discord_username: user.discord_username,
+          username: user.username,
           amount: creditAmount,
           wallet_url: walletUrl,
           success: true
@@ -111,7 +111,7 @@ const TopupPage = () => {
       await sendDiscordWebhook(
         "Topup Successful", 
         {
-          "Discord User": user.discord_username,
+          "Discord User": user.username,
           "Amount": creditAmount,
           "Wallet URL": walletUrl
         }

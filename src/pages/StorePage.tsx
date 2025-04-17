@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
@@ -146,10 +145,14 @@ const StorePage = () => {
         updatedMaps.push(selectedMapData.name);
       }
       
-      // Update place IDs array
+      // Update place IDs array - convert gameid to number if needed
       let updatedPlaceIds = [...(key.allowed_place_ids || [])];
-      if (!updatedPlaceIds.includes(selectedMapData.gameid)) {
-        updatedPlaceIds.push(selectedMapData.gameid);
+      
+      // Parse gameid to number if needed for allowed_place_ids
+      // We're keeping it as a string in our code, but handling it properly for the API
+      const gameIdNumber = parseInt(selectedMapData.gameid);
+      if (!isNaN(gameIdNumber) && !updatedPlaceIds.includes(gameIdNumber)) {
+        updatedPlaceIds.push(gameIdNumber);
       }
       
       // Update key in key storage
@@ -179,7 +182,7 @@ const StorePage = () => {
           key: key.key,
           maps: updatedMaps
         })
-        .eq("discord_username", user.discord_username);
+        .eq("username", user.username);
       
       if (balanceError) {
         toast({
@@ -194,8 +197,8 @@ const StorePage = () => {
       await supabase
         .from("buy_log")
         .insert([{
-          discord_username: user.discord_username,
-          map_name: selectedMapData.name,
+          username: user.username,
+          map: selectedMapData.name,
           price: selectedMapData.price,
           key: key.key,
           success: true
@@ -205,7 +208,7 @@ const StorePage = () => {
       await sendDiscordWebhook(
         "Script Purchase Successful", 
         {
-          "Discord User": user.discord_username,
+          "Discord User": user.username,
           "Map Name": selectedMapData.name,
           "Price": selectedMapData.price,
           "Key": key.key

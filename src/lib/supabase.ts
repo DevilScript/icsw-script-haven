@@ -27,7 +27,7 @@ export interface MapData {
   name: string;
   price: number;
   function: string[];
-  gameid: string;
+  gameid: string; // Changed to string to match the actual data type
 }
 
 export interface KeyData {
