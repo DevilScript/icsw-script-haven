@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				pink: {
+					DEFAULT: 'rgb(255,179,209)',
+					transparent: 'rgba(255,179,209,0.15)',
+					pastel: 'rgba(255,179,209,0.6)',
+					hover: 'rgba(255,179,209,0.8)',
 				}
 			},
 			borderRadius: {
@@ -84,11 +91,69 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse': {
+					'0%, 100%': { 
+						opacity: '1' 
+					},
+					'50%': { 
+						opacity: '0.5' 
+					},
+				},
+				'glow': {
+					'0%, 100%': {
+						textShadow: '0 0 5px rgba(255,179,209,0.5), 0 0 10px rgba(255,179,209,0.3)'
+					},
+					'50%': {
+						textShadow: '0 0 15px rgba(255,179,209,0.8), 0 0 20px rgba(255,179,209,0.5)'
+					},
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-5px)'
+					},
+				},
+				'fadeIn': {
+					'0%': { 
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': { 
+						opacity: '1',
+						transform: 'translateY(0)'
+					},
+				},
+				'slideIn': {
+					'0%': { 
+						opacity: '0',
+						transform: 'translateX(-20px)'
+					},
+					'100%': { 
+						opacity: '1',
+						transform: 'translateX(0)'
+					},
+				},
+				'expandWidth': {
+					'0%': {
+						width: '0%'
+					},
+					'100%': {
+						width: '100%'
+					},
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'glow': 'glow 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
+				'fade-in': 'fadeIn 0.5s ease-out forwards',
+				'slide-in': 'slideIn 0.5s ease-out forwards',
+				'expand-width': 'expandWidth 0.7s ease-out forwards',
 			}
 		}
 	},
