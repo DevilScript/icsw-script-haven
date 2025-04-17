@@ -1,11 +1,10 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Discord, CircleDot } from "lucide-react";
+import { Link } from "lucide-react";
 
 const Index = () => {
   const { loadUser, user, isLoading } = useAuthStore();
@@ -42,7 +41,7 @@ const Index = () => {
                 rel="noopener noreferrer"
                 className="flex items-center"
               >
-                <Discord className="mr-2" size={18} />
+                <Link className="mr-2" size={18} />
                 Join Discord
               </a>
             </Button>
