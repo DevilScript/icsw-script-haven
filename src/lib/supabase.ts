@@ -1,11 +1,10 @@
 
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 import { createClient } from '@supabase/supabase-js';
 
 // Main Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use the already configured client from the integrations folder
+export const supabase = supabaseClient;
 
 // Key storage Supabase client
 const keyStorageUrl = 'https://eusxbcbwyhjtfjplwtst.supabase.co';
