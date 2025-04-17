@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, 
-  Check, 
   ShoppingCart, 
   Key, 
   AlertCircle
@@ -245,16 +244,7 @@ const StorePage = () => {
           </span>
         </h1>
         
-        <div className="mb-8 text-center">
-          <div className="inline-block px-4 py-2 bg-black/30 rounded-full border border-pink-pastel">
-            <div className="flex items-center space-x-2">
-              <Key size={16} className="text-pink-DEFAULT" />
-              <span>Keys in Stock: <span className={keyCount > 0 ? "text-green-400" : "text-red-400"}>{keyCount}</span></span>
-            </div>
-          </div>
-        </div>
-        
-        <GlassCard className="mb-8">
+        <GlassCard className="mb-8 feature-card">
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2">Select Map</label>
@@ -281,28 +271,22 @@ const StorePage = () => {
             </div>
             
             {selectedMapData && (
-              <div className="p-4 bg-black/20 rounded-md border border-pink-pastel animate-fade-in">
-                <h3 className="text-xl font-semibold mb-3">{selectedMapData.name}</h3>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-gray-400 text-sm">Price</p>
-                    <p className="text-lg text-pink-DEFAULT">{selectedMapData.price} Credits</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-gray-400 text-sm">Game ID</p>
-                    <p className="text-lg">{selectedMapData.gameid}</p>
+              <div className="p-6 bg-black/30 rounded-lg animate-fade-in backdrop-blur-md border-t border-b border-pink-pastel/20">
+                <div className="flex justify-between items-start mb-6">
+                  <h3 className="text-2xl font-semibold text-pink-DEFAULT">{selectedMapData.name}</h3>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400">Price</p>
+                    <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-DEFAULT to-pink-DEFAULT/70">{selectedMapData.price} Credits</p>
                   </div>
                 </div>
                 
-                <div className="mb-4">
-                  <p className="text-gray-400 text-sm mb-1">Functions</p>
+                <div className="mb-6">
+                  <p className="text-gray-400 text-sm mb-2">Functions</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedMapData.function.map((func, index) => (
                       <span 
                         key={index}
-                        className="px-2 py-1 bg-pink-transparent text-xs rounded-full border border-pink-pastel"
+                        className="px-3 py-1.5 bg-black/40 text-xs rounded-full border border-pink-pastel/30"
                       >
                         {func}
                       </span>
@@ -310,69 +294,55 @@ const StorePage = () => {
                   </div>
                 </div>
                 
-                {user ? (
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="text-sm">
-                      Your Balance: <span className={user.balance >= selectedMapData.price ? "text-green-400" : "text-red-400"}>
-                        {user.balance} Credits
-                      </span>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-400">
+                    Keys in Stock: <span className={keyCount > 0 ? "text-green-400" : "text-red-400"}>{keyCount}</span>
+                  </div>
+                  
+                  {user ? (
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-sm">
+                        Your Balance: <span className={user.balance >= selectedMapData.price ? "text-green-400" : "text-red-400"}>
+                          {user.balance} Credits
+                        </span>
+                      </div>
+                      
+                      <Button
+                        onClick={handlePurchase}
+                        disabled={
+                          isBuying || 
+                          !user || 
+                          user.balance < selectedMapData.price || 
+                          keyCount <= 0
+                        }
+                        className={`button-3d shine-effect ${
+                          (!user || user.balance < selectedMapData.price || keyCount <= 0) ? 
+                          'disabled-element' : ''
+                        }`}
+                      >
+                        {isBuying ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Purchase
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    
-                    <Button
-                      onClick={handlePurchase}
-                      disabled={
-                        isBuying || 
-                        !user || 
-                        user.balance < selectedMapData.price || 
-                        keyCount <= 0
-                      }
-                      className="bg-pink-transparent hover:bg-pink-hover border border-pink-pastel shine-effect"
-                    >
-                      {isBuying ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Purchase
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center p-3 bg-black/40 rounded-md text-pink-DEFAULT border border-pink-pastel">
-                    <AlertCircle size={16} className="mr-2" />
-                    Please login to purchase scripts
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex items-center justify-center p-3 bg-black/40 rounded-md text-pink-DEFAULT border border-pink-pastel/30">
+                      <AlertCircle size={16} className="mr-2" />
+                      Please login to purchase scripts
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </GlassCard>
-        
-        {/* Instructions */}
-        <GlassCard>
-          <h3 className="text-xl font-semibold mb-4">How to Purchase</h3>
-          <ol className="space-y-3 text-gray-300">
-            <li className="flex items-start">
-              <span className="bg-pink-transparent text-pink-DEFAULT rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">1</span>
-              <span>Top up your account with TrueMoney Wallet in the Topup page</span>
-            </li>
-            <li className="flex items-start">
-              <span className="bg-pink-transparent text-pink-DEFAULT rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">2</span>
-              <span>Select the map script you want to purchase</span>
-            </li>
-            <li className="flex items-start">
-              <span className="bg-pink-transparent text-pink-DEFAULT rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">3</span>
-              <span>Click Purchase and receive your key</span>
-            </li>
-            <li className="flex items-start">
-              <span className="bg-pink-transparent text-pink-DEFAULT rounded-full h-6 w-6 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">4</span>
-              <span>Use your key in the Script page to access your purchased script</span>
-            </li>
-          </ol>
         </GlassCard>
       </div>
     </Layout>

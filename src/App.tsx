@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,9 +8,8 @@ import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import ScriptPage from "./pages/ScriptPage";
 import StorePage from "./pages/StorePage";
-import SupportPage from "./pages/SupportPage";
 import TopupPage from "./pages/TopupPage";
-import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,11 +26,11 @@ const App = () => {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#1a1a1f]">
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#151518]">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-2">
             <span className="text-white">ICS</span>
-            <span className="text-pink-DEFAULT animate-glow">W</span>
+            <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
           </h1>
           <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
           <p className="text-gray-400 animate-pulse">Loading...</p>
@@ -50,6 +50,7 @@ const App = () => {
             <Route path="/script" element={<ScriptPage />} />
             <Route path="/store" element={<StorePage />} />
             <Route path="/topup" element={<TopupPage />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

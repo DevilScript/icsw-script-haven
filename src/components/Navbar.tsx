@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { HelpCircle, Menu, X, CircleDot } from "lucide-react";
+import { HelpCircle, Menu, X, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -92,7 +92,7 @@ const Navbar = () => {
             <div className="mr-10">
               <h1 className="text-2xl font-bold">
                 <span className="text-white">ICS</span>
-                <span className="text-pink-DEFAULT animate-glow">W</span>
+                <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
               </h1>
               <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></div>
             </div>
@@ -105,7 +105,7 @@ const Navbar = () => {
                   className={({ isActive }) =>
                     `py-1 relative shine-effect ${
                       isActive
-                        ? "text-pink-DEFAULT"
+                        ? "text-[rgb(255,179,209)]"
                         : "text-gray-300 hover:text-white"
                     }`
                   }
@@ -128,17 +128,13 @@ const Navbar = () => {
             
             <Button 
               asChild
-              variant="outline" 
+              className="button-3d shine-effect"
               size="sm"
-              className="bg-pink-transparent border-pink-pastel hover:bg-pink-hover hover:text-white transition-all duration-300 hover-scale"
             >
-              <a 
-                href="https://discord.gg/3CFe4KBks2" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                Join Discord
-              </a>
+              <NavLink to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </NavLink>
             </Button>
           </div>
 
@@ -187,17 +183,13 @@ const Navbar = () => {
               
               <Button 
                 asChild
-                variant="outline" 
+                className="mx-4 button-3d shine-effect"
                 size="sm"
-                className="mx-4 bg-pink-transparent border-pink-pastel hover:bg-pink-hover hover:text-white transition-all duration-300"
               >
-                <a 
-                  href="https://discord.gg/3CFe4KBks2" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  Join Discord
-                </a>
+                <NavLink to="/auth">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </NavLink>
               </Button>
             </div>
           </div>
@@ -206,7 +198,7 @@ const Navbar = () => {
 
       {/* Help Dialog */}
       <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-card">
+        <DialogContent className="sm:max-w-[425px] bg-[#1a1a1f] border border-pink-pastel">
           <DialogHeader>
             <DialogTitle>Need Help?</DialogTitle>
             <DialogDescription>
@@ -222,7 +214,7 @@ const Navbar = () => {
                 <Input
                   id="discordTag"
                   placeholder="username#1234"
-                  className="col-span-3"
+                  className="col-span-3 bg-black/30 border-pink-pastel"
                   value={discordTag}
                   onChange={(e) => setDiscordTag(e.target.value)}
                 />
@@ -235,7 +227,7 @@ const Navbar = () => {
               <Textarea
                 id="message"
                 placeholder="How can we help?"
-                className="col-span-3"
+                className="col-span-3 bg-black/30 border-pink-pastel"
                 value={helpMessage}
                 onChange={(e) => setHelpMessage(e.target.value)}
               />
@@ -244,7 +236,7 @@ const Navbar = () => {
           <DialogFooter>
             <Button 
               onClick={handleHelpSubmit}
-              className="bg-pink-transparent border border-pink-pastel hover:bg-pink-hover"
+              className="button-3d shine-effect"
             >
               Send Message
             </Button>
