@@ -118,10 +118,10 @@ export type Database = {
         Row: {
           balance: number | null
           created_at: string | null
-          id: string
+          id: string | null
           keys: string[] | null
           maps: string[] | null
-          username: string
+          username: string | null
         }
         Insert: {
           balance?: number | null
