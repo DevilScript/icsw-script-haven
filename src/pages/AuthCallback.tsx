@@ -25,15 +25,14 @@ export default function AuthCallback() {
         if (data.session) {
           const user = data.session.user;
           const userMetadata = user?.user_metadata || {};
-          // ลองดึง display_name, global_name, name, หรือ username
           const discordGlobalName =
             userMetadata.display_name ||
             userMetadata.global_name ||
             userMetadata.name ||
             userMetadata.username ||
             'Unknown';
-          const username = user.email || user.id; // ใช้ email หรือ id เป็น username
-          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2)); // Debug log
+          const username = user.email || user.id;
+          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2));
 
           // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
           const { error: upsertError } = await supabase
@@ -46,7 +45,7 @@ export default function AuthCallback() {
                 created_at: new Date().toISOString(),
               },
               {
-                onConflict: 'id', // อัปเดตถ้ามี id อยู่แล้ว
+                onConflict: 'id',
               }
             );
 
@@ -61,11 +60,14 @@ export default function AuthCallback() {
             return;
           }
 
+          // รีเฟรช session เพื่อให้ useAuthStore อัปเดต
+          await supabase.auth.refreshSession();
+
           toast({
             title: 'สำเร็จ',
             description: `ยินดีต้อนรับ ${discordGlobalName}!`,
           });
-          navigate('/'); // ไปที่หน้าแรก
+          navigate('/');
         } else {
           toast({
             title: 'ข้อผิดพลาด',
@@ -92,7 +94,7 @@ export default function AuthCallback() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <h1 className="text-2xl font-bold">กำลังดำเนินการ...</h1>
-        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ</p>
+        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ | Auth Callback</p>
         <Button disabled>กำลังโหลด...</Button>
       </div>
     </div>

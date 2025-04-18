@@ -1,111 +1,106 @@
-
 import { create } from 'zustand';
-import { supabase } from './supabase';
-import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: string;
-  username: string; // This is used consistently throughout the app
-  balance: number;
-  keys?: string[];
-  maps?: string[];
-}
+import { supabase } from '../integrations/supabase/client';
 
 interface AuthState {
-  user: User | null;
+  user: any | null;
+  nickname: string | null;
   isLoading: boolean;
-  login: (username: string) => Promise<boolean>;
-  logout: () => void;
-  loadUser: () => Promise<void>;
+  setUser: (user: any | null) => void;
+  setNickname: (nickname: string | null) => void;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  nickname: null,
   isLoading: true,
-  login: async (username: string) => {
-    try {
-      set({ isLoading: true });
-      
-      // Check if user exists
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('user_id')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking user:', fetchError);
-        return false;
-      }
-
-      // If user doesn't exist, create a new one
-      if (!existingUser) {
-        const { data: newUser, error: insertError } = await supabase
-          .from('user_id')
-          .insert([
-            { username: username, balance: 0 }
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating user:', insertError);
-          return false;
-        }
-
-        set({ 
-          user: newUser as User,
-          isLoading: false 
-        });
-      } else {
-        set({ 
-          user: existingUser as User,
-          isLoading: false 
-        });
-      }
-
-      // Save to local storage
-      localStorage.setItem('username', username);
-      return true;
-
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  logout: () => {
-    localStorage.removeItem('username');
-    set({ user: null });
-  },
-  loadUser: async () => {
-    try {
-      set({ isLoading: true });
-      const username = localStorage.getItem('username');
-
-      if (!username) {
-        set({ isLoading: false });
-        return;
-      }
-
-      const { data: user, error } = await supabase
-        .from('user_id')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (error) {
-        console.error('Error loading user:', error);
-        localStorage.removeItem('username');
-        set({ user: null, isLoading: false });
-        return;
-      }
-
-      set({ user: user as User, isLoading: false });
-    } catch (error) {
-      console.error('Load user error:', error);
-      set({ isLoading: false });
-    }
-  }
+  setUser: (user) => set({ user }),
+  setNickname: (nickname) => set({ nickname }),
+  setIsLoading: (isLoading) => set({ isLoading }),
 }));
+
+// Initialize auth state
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Error fetching initial session:', error);
+    useAuthStore.getState().setIsLoading(false);
+    return;
+  }
+  if (data.session) {
+    useAuthStore.getState().setUser(data.session.user);
+    // Fetch nickname from user_id
+    supabase
+      .from('user_id')
+      .select('nickname')
+      .eq('id', data.session.user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching nickname:', error);
+        } else {
+          useAuthStore.getState().setNickname(data?.nickname || null);
+        }
+        useAuthStore.getState().setIsLoading(false);
+      });
+  } else {
+    useAuthStore.getState().setIsLoading(false);
+  }
+});
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  useAuthStore.getState().setUser(session?.user ?? null);
+  if (session?.user) {
+    supabase
+      .from('user_id')
+      .select('nickname')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching nickname:', error);
+        } else {
+          useAuthStore.getState().setNickname(data?.nickname || null);
+        }
+      });
+  } else {
+    useAuthStore.getState().setNickname(null);
+  }
+  useAuthStore.getState().setIsLoading(false);
+});
+
+export async function signInWithDiscord() {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      console.error('Discord sign-in error:', error);
+      throw new Error('ไม่สามารถล็อกอินด้วย Discord ได้ กรุณาลองใหม่');
+    }
+  } catch (err) {
+    console.error('Unexpected error during Discord sign-in:', err);
+    throw err;
+  }
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('Sign out error:', error);
+    throw new Error('ไม่สามารถออกจากระบบได้ กรุณาลองใหม่');
+  }
+}
+
+export async function getCurrentUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error('Error getting user:', error);
+    return null;
+  }
+  return data.user;
+}
