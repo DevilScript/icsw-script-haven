@@ -33,12 +33,6 @@
   }
 }
 
-@media (max-width: 640px) {
-  .mobile-nav {
-    background-color: rgba(17, 24, 39, 0.95);
-  }
-}
-
 .user-balance {
   display: flex;
   align-items: center;
