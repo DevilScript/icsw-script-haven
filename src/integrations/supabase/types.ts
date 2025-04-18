@@ -122,6 +122,7 @@ export type Database = {
           keys: string[] | null
           maps: string[] | null
           username: string | null
+          nickname: string
         }
         Insert: {
           balance?: number | null
@@ -129,7 +130,8 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
-          username: string
+          username?: string | null
+          nickname?: string
         }
         Update: {
           balance?: number | null
@@ -137,7 +139,8 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
-          username?: string
+          username?: string | null
+          nickname?: string
         }
         Relationships: []
       }
