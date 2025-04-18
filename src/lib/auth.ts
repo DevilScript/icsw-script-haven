@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
-  username: string; // 
+  username: string; 
   balance: number;
   keys?: string[];
   maps?: string[];
