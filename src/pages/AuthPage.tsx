@@ -1,98 +1,142 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import GlassCard from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 const AuthPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { user, login } = useAuthStore();
   const { toast } = useToast();
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } else {
-      toast({ title: "Success", description: "Logged in successfully" });
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check for auth error in URL
+    const url = new URL(window.location.href);
+    const errorDescription = url.searchParams.get('error_description');
+    
+    if (errorDescription) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: errorDescription.replace(/\+/g, ' '),
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  };
-
+    
+    // If user is already logged in, redirect to home
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate, toast]);
+  
   const handleDiscordLogin = async () => {
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: import.meta.env.VITE_SUPABASE_SITE_URL || 'http://localhost:5173/auth/callback',
-        scopes: 'identify email',
-      },
-    });
-    setIsLoading(false);
-    if (error) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: import.meta.env.VITE_SUPABASE_SITE_URL || 'http://localhost:5173/auth/callback',
+          scopes: 'identify email',
+        }
+      });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "An unexpected error occurred.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-[#1a1a1a]">
-      <div className="w-full max-w-md p-6 bg-[#222222]/80 backdrop-blur-md rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-pink-DEFAULT mb-6 flex items-center">
-          <span className="mr-2">Login</span>
-          <span className="text-white">to ICSW</span>
-        </h2>
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <div>
-            <Label htmlFor="email" className="text-pink-pastel">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="key-input bg-[#2a2a2a] text-white border-pink-DEFAULT/20"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="password" className="text-pink-pastel">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="key-input bg-[#2a2a2a] text-white border-pink-DEFAULT/20"
-              required
-            />
-          </div>
+    <Layout>
+      <div className="max-w-md mx-auto my-12">
+        <GlassCard className="text-center py-10 feature-card">
+          <h1 className="text-3xl font-bold mb-6">
+            <span className="relative">
+              Authentication
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></span>
+            </span>
+          </h1>
+          
+          <p className="text-gray-300 mb-8">
+            Login with your Discord account to access exclusive scripts and features.
+          </p>
+          
           <Button
-            type="submit"
+            className="discord-button-3d px-6 py-6 text-lg rounded-md shine-effect w-full"
+            onClick={() => setIsDialogOpen(true)}
             disabled={isLoading}
-            className="w-full button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
-          >
-            {isLoading ? "Loading..." : "Login with Email"}
-          </Button>
-        </form>
-        <div className="mt-4">
-          <Button
-            onClick={handleDiscordLogin}
-            disabled={isLoading}
-            className="w-full button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
           >
             {isLoading ? "Loading..." : "Login with Discord"}
           </Button>
-        </div>
-        <div className="mt-4 text-center">
-          <NavLink to="/signup" className="text-gray-300 hover:text-pink-DEFAULT">
-            Don't have an account? Sign up
-          </NavLink>
-        </div>
+        </GlassCard>
       </div>
-    </div>
+      
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#1a1a1f] border border-pink-pastel help-dialog">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-pink-DEFAULT">Discord Authentication</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Connect your Discord account to continue.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6">
+            <p className="text-sm text-gray-400 mb-6">
+              By connecting your Discord account, you'll be able to:
+            </p>
+            
+            <ul className="space-y-2 text-sm text-gray-300 mb-6">
+              <li className="flex items-center">
+                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                <span>Purchase and access premium scripts</span>
+              </li>
+              <li className="flex items-center">
+                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                <span>Get support from our team</span>
+              </li>
+              <li className="flex items-center">
+                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                <span>Receive updates about new features</span>
+              </li>
+            </ul>
+            
+            <Button 
+              onClick={handleDiscordLogin} 
+              className="discord-button-3d w-full bg-[#5865F2] hover:bg-[#4752c4]"
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading..." : "Authorize with Discord"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Layout>
   );
 };
 
