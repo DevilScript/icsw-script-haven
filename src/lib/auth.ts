@@ -1,70 +1,111 @@
+
+import { create } from 'zustand';
 import { supabase } from './supabase';
-import { useAuthStore } from './auth';
+import { useToast } from '@/hooks/use-toast';
 
-export async function signInWithDiscord() {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: 'https://ifmrpxcnhebocyvcbcpn.supabase.co/auth/v1/callback',
-        skipBrowserRedirect: true,
-      },
-    });
-
-    if (error) {
-      console.error('Discord Auth Error:', error);
-      throw error;
-    }
-
-    if (data.url) {
-      const popup = window.open(data.url, 'discordAuth', 'width=600,height=600');
-      if (!popup) {
-        throw new Error('Failed to open popup. Please allow popups for this site.');
-      }
-    }
-  } catch (error) {
-    console.error('SignInWithDiscord error:', error);
-    throw error;
-  }
+interface User {
+  id: string;
+  username: string; // This is used consistently throughout the app
+  balance: number;
+  keys?: string[];
+  maps?: string[];
 }
 
-export async function syncUserAfterAuth(session: any) {
-  try {
-    const { data: userData, error } = await supabase
-      .from('user_id')
-      .select('id, username, balance, keys, maps')
-      .eq('id', session.user.id)
-      .single();
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  login: (username: string) => Promise<boolean>;
+  logout: () => void;
+  loadUser: () => Promise<void>;
+}
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user:', error);
-      throw error;
-    }
-
-    if (!userData) {
-      const { data: newUser, error: insertError } = await supabase
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isLoading: true,
+  login: async (username: string) => {
+    try {
+      set({ isLoading: true });
+      
+      // Check if user exists
+      const { data: existingUser, error: fetchError } = await supabase
         .from('user_id')
-        .insert([
-          {
-            id: session.user.id,
-            username: session.user.user_metadata.name || 'discord_user_' + session.user.id.slice(0, 8),
-            balance: 0,
-          },
-        ])
-        .select()
+        .select('*')
+        .eq('username', username)
         .single();
 
-      if (insertError) {
-        console.error('Error creating user:', insertError);
-        throw insertError;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking user:', fetchError);
+        return false;
       }
 
-      useAuthStore.setState({ user: newUser, isLoading: false });
-    } else {
-      useAuthStore.setState({ user: userData, isLoading: false });
+      // If user doesn't exist, create a new one
+      if (!existingUser) {
+        const { data: newUser, error: insertError } = await supabase
+          .from('user_id')
+          .insert([
+            { username: username, balance: 0 }
+          ])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating user:', insertError);
+          return false;
+        }
+
+        set({ 
+          user: newUser as User,
+          isLoading: false 
+        });
+      } else {
+        set({ 
+          user: existingUser as User,
+          isLoading: false 
+        });
+      }
+
+      // Save to local storage
+      localStorage.setItem('username', username);
+      return true;
+
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      set({ isLoading: false });
     }
-  } catch (error) {
-    console.error('Sync user error:', error);
-    throw error;
+  },
+  logout: () => {
+    localStorage.removeItem('username');
+    set({ user: null });
+  },
+  loadUser: async () => {
+    try {
+      set({ isLoading: true });
+      const username = localStorage.getItem('username');
+
+      if (!username) {
+        set({ isLoading: false });
+        return;
+      }
+
+      const { data: user, error } = await supabase
+        .from('user_id')
+        .select('*')
+        .eq('username', username)
+        .single();
+
+      if (error) {
+        console.error('Error loading user:', error);
+        localStorage.removeItem('username');
+        set({ user: null, isLoading: false });
+        return;
+      }
+
+      set({ user: user as User, isLoading: false });
+    } catch (error) {
+      console.error('Load user error:', error);
+      set({ isLoading: false });
+    }
   }
-}
+}));
