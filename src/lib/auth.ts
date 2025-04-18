@@ -55,12 +55,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
 
         set({ 
-          user: newUser as User,
+          user: newUser as UserData,
           isLoading: false 
         });
       } else {
         set({ 
-          user: existingUser as User,
+          user: existingUser as UserData,
           isLoading: false 
         });
       }
@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      set({ user: user as User, isLoading: false });
+      set({ user: user as UserData, isLoading: false });
     } catch (error) {
       console.error('Load user error:', error);
       set({ isLoading: false });
