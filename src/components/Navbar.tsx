@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from './ui/button';
 import { Menu, X } from 'lucide-react';
-import { useMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
@@ -12,7 +11,6 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
-  const isMobile = useMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
 
