@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { HelpCircle, Menu, X, LogIn, History, Key } from "lucide-react";
@@ -25,11 +26,8 @@ const Navbar = () => {
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
   const [discordTag, setDiscordTag] = useState("");
-  const { user, nickname, isLoading } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
-
-  // Debug log
-  console.log('Navbar auth state:', { user, nickname, isLoading });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -144,7 +142,7 @@ const Navbar = () => {
                       `py-1 relative shine-effect ${
                         isActive
                           ? "text-[rgb(255,179,209)]"
-                        : "text-gray-300 hover:text-white"
+                          : "text-gray-300 hover:text-white"
                       }`
                     }
                   >
@@ -168,30 +166,16 @@ const Navbar = () => {
               <HelpCircle className="h-5 w-5" />
             </Button>
             
-            {isLoading ? (
-              <Button disabled>Loading...</Button>
-            ) : user ? (
-              <Button 
-                asChild
-                className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
-                size="sm"
-              >
-                <NavLink to="/profile">
-                  {nickname || user.username || 'Profile'}
-                </NavLink>
-              </Button>
-            ) : (
-              <Button 
-                asChild
-                className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
-                size="sm"
-              >
-                <NavLink to="/auth">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Login
-                </NavLink>
-              </Button>
-            )}
+            <Button 
+              asChild
+              className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
+              size="sm"
+            >
+              <NavLink to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </NavLink>
+            </Button>
           </div>
 
           {/* Mobile menu button */}
@@ -271,30 +255,16 @@ const Navbar = () => {
                 Get Help
               </Button>
               
-              {isLoading ? (
-                <Button disabled className="mx-4">Loading...</Button>
-              ) : user ? (
-                <Button 
-                  asChild
-                  className="mx-4 button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
-                  size="sm"
-                >
-                  <NavLink to="/profile" onClick={() => setIsOpen(false)}>
-                    {nickname || user.username || 'Profile'}
-                  </NavLink>
-                </Button>
-              ) : (
-                <Button 
-                  asChild
-                  className="mx-4 button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
-                  size="sm"
-                >
-                  <NavLink to="/auth" onClick={() => setIsOpen(false)}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                  </NavLink>
-                </Button>
-              )}
+              <Button 
+                asChild
+                className="mx-4 button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
+                size="sm"
+              >
+                <NavLink to="/auth" onClick={() => setIsOpen(false)}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </NavLink>
+              </Button>
             </div>
           </div>
         )}

@@ -11,7 +11,6 @@ export default function AuthCallback() {
     async function handleAuthCallback() {
       try {
         const { data, error } = await supabase.auth.getSession();
-        console.log('AuthCallback session:', { data, error }); // Debug log
         if (error) {
           console.error('Error getting session:', error);
           toast({
@@ -26,17 +25,12 @@ export default function AuthCallback() {
         if (data.session) {
           const user = data.session.user;
           const userMetadata = user?.user_metadata || {};
-          const discordGlobalName =
-            userMetadata.display_name ||
-            userMetadata.global_name ||
-            userMetadata.name ||
-            userMetadata.username ||
-            'Unknown';
-          const username = user.email || user.id;
-          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2));
+          const discordGlobalName = userMetadata.global_name || userMetadata.username || 'Unknown';
+          const username = user.email || user.id; // ใช้ email หรือ id เป็น username
+          console.log('User metadata:', userMetadata); // Debug log
 
           // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
-          const { data: upsertData, error: upsertError } = await supabase
+          const { error: upsertError } = await supabase
             .from('user_id')
             .upsert(
               {
@@ -46,11 +40,9 @@ export default function AuthCallback() {
                 created_at: new Date().toISOString(),
               },
               {
-                onConflict: 'id',
+                onConflict: 'id', // อัปเดตถ้ามี id อยู่แล้ว
               }
             );
-
-          console.log('Upsert result:', { upsertData, upsertError }); // Debug log
 
           if (upsertError) {
             console.error('Error upserting user_id:', upsertError);
@@ -63,15 +55,11 @@ export default function AuthCallback() {
             return;
           }
 
-          // รีเฟรช session เพื่อให้ useAuthStore อัปเดต
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          console.log('Refresh session:', { refreshData, refreshError }); // Debug log
-
           toast({
             title: 'สำเร็จ',
             description: `ยินดีต้อนรับ ${discordGlobalName}!`,
           });
-          navigate('/');
+          navigate('/'); // ไปที่หน้าแรก
         } else {
           toast({
             title: 'ข้อผิดพลาด',
@@ -98,7 +86,7 @@ export default function AuthCallback() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <h1 className="text-2xl font-bold">กำลังดำเนินการ...</h1>
-        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ | Auth Callback</p>
+        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ</p>
         <Button disabled>กำลังโหลด...</Button>
       </div>
     </div>

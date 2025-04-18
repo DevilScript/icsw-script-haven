@@ -14,7 +14,6 @@ import NotFound from "./pages/NotFound";
 import HistoryPage from "./pages/HistoryPage";
 import ResetHWIDPage from "./pages/ResetHWIDPage";
 import AuthCallback from "./pages/AuthCallback";
-import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = new QueryClient();
 
@@ -45,7 +44,6 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -64,7 +62,6 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
-    </ErrorBoundary>
   );
 };
 
