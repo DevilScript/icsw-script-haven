@@ -17,6 +17,31 @@ const AuthCallback = () => {
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
         
+        // Check for errors in URL
+        const error = url.searchParams.get('error');
+        const errorDescription = url.searchParams.get('error_description');
+        
+        if (error) {
+          console.error('Auth error:', error, errorDescription);
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: errorDescription ? decodeURIComponent(errorDescription.replace(/\+/g, ' ')) : "Authentication failed"
+          });
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Check if in a popup
+          if (window.opener) {
+            window.opener.postMessage({ type: 'AUTH_ERROR', error: errorDescription }, window.location.origin);
+            window.close();
+          } else {
+            navigate('/auth');
+          }
+          return;
+        }
+        
         if (!code) {
           toast({
             variant: "destructive",
@@ -26,6 +51,7 @@ const AuthCallback = () => {
           
           // Check if in a popup
           if (window.opener) {
+            window.opener.postMessage({ type: 'AUTH_ERROR', error: 'No code received' }, window.location.origin);
             window.close();
           } else {
             navigate('/auth');
@@ -34,15 +60,29 @@ const AuthCallback = () => {
         }
         
         // Exchange the code for a session
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
-        if (error) {
-          throw error;
+        if (exchangeError) {
+          console.error('Exchange code error:', exchangeError);
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: exchangeError.message
+          });
+          
+          // Check if in a popup
+          if (window.opener) {
+            window.opener.postMessage({ type: 'AUTH_ERROR', error: exchangeError.message }, window.location.origin);
+            window.close();
+          } else {
+            navigate('/auth');
+          }
+          return;
         }
         
         if (data.session) {
           // Get the user's details
-          loadUser();
+          await loadUser();
           
           // Auth successful - if in a popup, send a message to opener
           if (window.opener) {
@@ -67,6 +107,7 @@ const AuthCallback = () => {
         
         // Check if in a popup
         if (window.opener) {
+          window.opener.postMessage({ type: 'AUTH_ERROR', error: 'Unexpected error' }, window.location.origin);
           window.close();
         } else {
           navigate('/auth');

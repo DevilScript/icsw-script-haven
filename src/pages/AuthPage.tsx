@@ -30,7 +30,7 @@ const AuthPage = () => {
       toast({
         variant: "destructive",
         title: "Authentication Error",
-        description: errorDescription.replace(/\+/g, ' '),
+        description: decodeURIComponent(errorDescription.replace(/\+/g, ' ')),
       });
       
       // Clean up URL
@@ -41,6 +41,31 @@ const AuthPage = () => {
     if (user) {
       navigate("/");
     }
+    
+    // Listen for auth messages from popup
+    const authMessageHandler = (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'AUTH_SUCCESS') {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!"
+        });
+        navigate('/');
+      } else if (event.data.type === 'AUTH_ERROR') {
+        toast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: event.data.error || "Unknown error occurred"
+        });
+      }
+    };
+    
+    window.addEventListener('message', authMessageHandler);
+    
+    return () => {
+      window.removeEventListener('message', authMessageHandler);
+    };
   }, [user, navigate, toast]);
   
   const handleDiscordLogin = async () => {
@@ -77,29 +102,7 @@ const AuthPage = () => {
           `width=${width},height=${height},left=${left},top=${top}`
         );
         
-        if (popup) {
-          // Listen for messages from the popup
-          window.addEventListener('message', function onAuthMessage(event) {
-            if (event.origin !== window.location.origin) return;
-            if (event.data.type === 'AUTH_SUCCESS') {
-              window.removeEventListener('message', onAuthMessage);
-              toast({
-                title: "Login Successful",
-                description: "Welcome back!"
-              });
-              navigate('/');
-            }
-          });
-          
-          // Check if popup is closed
-          const checkPopupClosed = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(checkPopupClosed);
-              // Check for session after popup is closed
-              checkUserSession();
-            }
-          }, 500);
-        } else {
+        if (!popup) {
           toast({
             variant: "destructive",
             title: "Popup Blocked",
@@ -114,16 +117,6 @@ const AuthPage = () => {
         title: "Login Failed",
         description: "An unexpected error occurred.",
       });
-    }
-  };
-  
-  // Check if user is logged in after popup is closed
-  const checkUserSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    
-    if (data?.session) {
-      // User is logged in
-      navigate('/');
     }
   };
   
