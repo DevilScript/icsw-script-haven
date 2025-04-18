@@ -7,7 +7,7 @@ import { useAuthStore } from '@/lib/auth';
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setUser, setIsLoading } = useAuthStore();
+  const { setIsLoading, login } = useAuthStore();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -57,16 +57,32 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          setUser(data.session.user);
-          toast({
-            title: 'Success',
-            description: 'Successfully logged in!',
-          });
-          if (window.opener) {
-            window.opener.location.href = '/';
-            window.close();
+          // ใช้ Discord username หรือ email เป็น username
+          const username = data.session.user?.user_metadata?.name || data.session.user?.email?.split('@')[0] || 'discord_user';
+          const loginSuccess = await login(username);
+          if (loginSuccess) {
+            toast({
+              title: 'Success',
+              description: 'Successfully logged in with Discord!',
+            });
+            if (window.opener) {
+              window.opener.location.href = '/';
+              window.close();
+            } else {
+              navigate('/');
+            }
           } else {
-            navigate('/');
+            toast({
+              title: 'Error',
+              description: 'Failed to log in with Discord user.',
+              variant: 'destructive',
+            });
+            if (window.opener) {
+              window.opener.focus();
+              window.close();
+            } else {
+              navigate('/auth');
+            }
           }
         }
       } catch (error) {
@@ -88,7 +104,7 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [searchParams, navigate, setUser, setIsLoading]);
+  }, [searchParams, navigate, login, setIsLoading]);
 
   return <div>Loading...</div>;
 }

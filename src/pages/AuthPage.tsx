@@ -4,12 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
-  const { isLoading, setIsLoading } = useAuthStore();
+  const { isLoading, signInWithDiscord } = useAuthStore();
 
   const handleDiscordLogin = async () => {
-    setIsLoading(true);
-    await signInWithOAuth('discord');
-    // isLoading จะถูกจัดการใน auth.ts
+    await signInWithDiscord();
   };
 
   return (
