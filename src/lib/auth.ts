@@ -26,11 +26,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ isLoading: true });
       
+      // Sanitize username
+      const sanitizedUsername = username.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+      if (!sanitizedUsername) {
+        throw new Error('Invalid username');
+      }
+
       // Check if user exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_id')
         .select('*')
-        .eq('username', username)
+        .eq('username', sanitizedUsername)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
@@ -48,7 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const { data: newUser, error: insertError } = await supabase
           .from('user_id')
           .insert([
-            { username: username, balance: 0 }
+            { username: sanitizedUsername, balance: 0 }
           ])
           .select()
           .single();
@@ -75,7 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       // Save to local storage
-      localStorage.setItem('username', username);
+      localStorage.setItem('username', sanitizedUsername);
       return true;
 
     } catch (error) {
@@ -129,7 +135,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `https://icsw-script-haven.lovable.app/auth/callback`,
           skipBrowserRedirect: true,
         },
       });
@@ -143,6 +149,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         return;
       }
+
+      console.log('OAuth URL:', data.url); // Debug
 
       if (data.url) {
         const popup = window.open(data.url, 'oauth_popup', 'width=600,height=600');
@@ -159,6 +167,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           if (popup.closed) {
             clearInterval(checkPopupClosed);
             const { data: { session }, error } = await supabase.auth.getSession();
+            console.log('Session:', session, 'Error:', error); // Debug
             if (error || !session) {
               toast({
                 title: 'Error',
@@ -166,8 +175,8 @@ export const useAuthStore = create<AuthState>((set) => ({
                 variant: 'destructive',
               });
             } else {
-              // ใช้ Discord username หรือ email เป็น username
               const username = session.user?.user_metadata?.name || session.user?.email?.split('@')[0] || 'discord_user';
+              console.log('Attempting login with username:', username); // Debug
               const loginSuccess = await useAuthStore.getState().login(username);
               if (loginSuccess) {
                 toast({

@@ -15,6 +15,8 @@ export default function AuthCallback() {
       const errorDescription = searchParams.get('error_description');
       const code = searchParams.get('code');
 
+      console.log('Callback params:', { error, errorDescription, code }); // Debug
+
       if (error || errorDescription) {
         console.error('Auth callback error:', { error, errorDescription });
         toast({
@@ -51,14 +53,15 @@ export default function AuthCallback() {
 
       try {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        console.log('Exchange session:', data, 'Error:', error); // Debug
         if (error) {
           console.error('Error exchanging code for session:', error);
           throw error;
         }
 
         if (data.session) {
-          // ใช้ Discord username หรือ email เป็น username
           const username = data.session.user?.user_metadata?.name || data.session.user?.email?.split('@')[0] || 'discord_user';
+          console.log('Logging in with username:', username); // Debug
           const loginSuccess = await login(username);
           if (loginSuccess) {
             toast({
