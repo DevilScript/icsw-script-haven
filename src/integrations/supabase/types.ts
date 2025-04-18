@@ -118,11 +118,10 @@ export type Database = {
         Row: {
           balance: number | null
           created_at: string | null
-          id: string | null
+          id: string
           keys: string[] | null
           maps: string[] | null
-          username: string | null
-          nickname: string
+          username: string
         }
         Insert: {
           balance?: number | null
@@ -130,8 +129,7 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
-          username?: string | null
-          nickname?: string
+          username: string
         }
         Update: {
           balance?: number | null
@@ -139,8 +137,7 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
-          username?: string | null
-          nickname?: string
+          username?: string
         }
         Relationships: []
       }
