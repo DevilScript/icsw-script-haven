@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 const AuthPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { user, login } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -45,7 +45,7 @@ const AuthPage = () => {
   
   const handleDiscordLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -63,13 +63,8 @@ const AuthPage = () => {
         return;
       }
       
-      // Get the URL from the response
-      const { data } = await supabase.auth.getSession();
-      
-      if (data?.session) {
-        // If we already have a session, redirect to home
-        navigate("/");
-      } else {
+      // Get the URL from the data
+      if (data?.url) {
         // Open a popup window for Discord auth
         const width = 600;
         const height = 600;
@@ -77,33 +72,33 @@ const AuthPage = () => {
         const top = window.screenY + (window.outerHeight - height) / 2;
         
         const popup = window.open(
-          'about:blank',
+          data.url,
           'discord-login',
           `width=${width},height=${height},left=${left},top=${top}`
         );
         
         if (popup) {
-          const { data } = await supabase.auth.signInWithOAuth({
-            provider: 'discord',
-            options: { 
-              redirectTo: `${window.location.origin}/auth/callback`
+          // Listen for messages from the popup
+          window.addEventListener('message', function onAuthMessage(event) {
+            if (event.origin !== window.location.origin) return;
+            if (event.data.type === 'AUTH_SUCCESS') {
+              window.removeEventListener('message', onAuthMessage);
+              toast({
+                title: "Login Successful",
+                description: "Welcome back!"
+              });
+              navigate('/');
             }
           });
           
-          if (data?.url) {
-            popup.location.href = data.url;
-            
-            // Check if popup is closed
-            const checkPopupClosed = setInterval(() => {
-              if (popup.closed) {
-                clearInterval(checkPopupClosed);
-                // Check for session after popup is closed
-                checkUserSession();
-              }
-            }, 500);
-          } else {
-            popup.close();
-          }
+          // Check if popup is closed
+          const checkPopupClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkPopupClosed);
+              // Check for session after popup is closed
+              checkUserSession();
+            }
+          }, 500);
         } else {
           toast({
             variant: "destructive",

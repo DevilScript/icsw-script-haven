@@ -23,7 +23,13 @@ const AuthCallback = () => {
             title: "Authentication Failed",
             description: "No authentication code received"
           });
-          navigate('/auth');
+          
+          // Check if in a popup
+          if (window.opener) {
+            window.close();
+          } else {
+            navigate('/auth');
+          }
           return;
         }
         
@@ -58,7 +64,13 @@ const AuthCallback = () => {
           title: "Authentication Failed",
           description: error instanceof Error ? error.message : "An unexpected error occurred"
         });
-        navigate('/auth');
+        
+        // Check if in a popup
+        if (window.opener) {
+          window.close();
+        } else {
+          navigate('/auth');
+        }
       }
     };
 

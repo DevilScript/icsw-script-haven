@@ -20,9 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showNavbar, setShowNavbar] = useState(true);
   const [isAtTop, setIsAtTop] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
   const [discordTag, setDiscordTag] = useState("");
@@ -33,13 +31,11 @@ const Navbar = () => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setIsAtTop(currentScrollY < 50);
-      setShowNavbar(currentScrollY < lastScrollY || currentScrollY < 100);
-      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   const handleHelpSubmit = async () => {
     if (!helpMessage) {
@@ -83,8 +79,6 @@ const Navbar = () => {
 
   const navbarClasses = `fixed w-full z-50 transition-all duration-300 ${
     isAtTop ? "py-4 bg-transparent" : "py-2 bg-black/40 backdrop-blur-md shadow-lg"
-  } ${
-    showNavbar ? "translate-y-0" : "-translate-y-full"
   }`;
 
   return (
