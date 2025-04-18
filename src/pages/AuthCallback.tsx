@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -9,10 +9,13 @@ const AuthCallback = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loadUser } = useAuthStore();
+  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        setIsProcessing(true);
+        
         // Get the auth code from the URL
         const url = new URL(window.location.href);
         const code = url.searchParams.get('code');
@@ -64,6 +67,33 @@ const AuthCallback = () => {
         
         if (exchangeError) {
           console.error('Exchange code error:', exchangeError);
+          
+          // If we get a database error with new user, handle it differently
+          if (exchangeError.message.includes("Database error saving new user")) {
+            console.log("Detected database error with new user, attempting login directly");
+            
+            // Check if the user exists despite the error
+            const { data: sessionData } = await supabase.auth.getSession();
+            
+            if (sessionData?.session) {
+              // We have a session, so authentication actually worked despite the error
+              await loadUser();
+              
+              // Auth successful - if in a popup, send a message to opener
+              if (window.opener) {
+                window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+                window.close();
+              } else {
+                toast({
+                  title: "Login Successful",
+                  description: "Welcome back!"
+                });
+                navigate('/');
+              }
+              return;
+            }
+          }
+          
           toast({
             variant: "destructive",
             title: "Authentication Failed",
@@ -112,6 +142,8 @@ const AuthCallback = () => {
         } else {
           navigate('/auth');
         }
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -126,7 +158,11 @@ const AuthCallback = () => {
           <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
         </h1>
         <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
-        <p className="text-gray-400 animate-pulse">Processing authentication...</p>
+        {isProcessing ? (
+          <p className="text-gray-400 animate-pulse">Processing authentication...</p>
+        ) : (
+          <p className="text-gray-400">Authentication complete, redirecting...</p>
+        )}
       </div>
     </div>
   );
