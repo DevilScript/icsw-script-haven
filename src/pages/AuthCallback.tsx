@@ -29,14 +29,11 @@ const AuthCallback = () => {
       }
 
       try {
-        // แลก code เป็น session
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
 
-        // Sync ข้อมูลผู้ใช้
         await syncUserAfterAuth(data.session);
 
-        // ส่ง message ไปหน้าหลัก
         if (window.opener) {
           window.opener.postMessage({ type: 'auth_success', session: data.session }, '*');
           window.close();

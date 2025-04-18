@@ -1,146 +1,70 @@
-import { create } from 'zustand';
 import { supabase } from './supabase';
-import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from './auth';
 
-interface User {
-  id: string;
-  username: string;
-  balance: number;
-  keys?: string[];
-  maps?: string[];
+export async function signInWithDiscord() {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: 'https://ifmrpxcnhebocyvcbcpn.supabase.co/auth/v1/callback',
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) {
+      console.error('Discord Auth Error:', error);
+      throw error;
+    }
+
+    if (data.url) {
+      const popup = window.open(data.url, 'discordAuth', 'width=600,height=600');
+      if (!popup) {
+        throw new Error('Failed to open popup. Please allow popups for this site.');
+      }
+    }
+  } catch (error) {
+    console.error('SignInWithDiscord error:', error);
+    throw error;
+  }
 }
 
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  login: (username: string) => Promise<boolean>;
-  logout: () => void;
-  loadUser: () => Promise<void>;
-  loginWithDiscord: () => Promise<boolean>;
-}
+export async function syncUserAfterAuth(session: any) {
+  try {
+    const { data: userData, error } = await supabase
+      .from('user_id')
+      .select('id, username, balance, keys, maps')
+      .eq('id', session.user.id)
+      .single();
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isLoading: true,
-  login: async (username: string) => {
-    try {
-      set({ isLoading: true });
-      
-      const { data: existingUser, error: fetchError } = await supabase
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching user:', error);
+      throw error;
+    }
+
+    if (!userData) {
+      const { data: newUser, error: insertError } = await supabase
         .from('user_id')
-        .select('*')
-        .eq('username', username)
+        .insert([
+          {
+            id: session.user.id,
+            username: session.user.user_metadata.name || 'discord_user_' + session.user.id.slice(0, 8),
+            balance: 0,
+          },
+        ])
+        .select()
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking user:', fetchError);
-        return false;
+      if (insertError) {
+        console.error('Error creating user:', insertError);
+        throw insertError;
       }
 
-      if (!existingUser) {
-        const { data: newUser, error: insertError } = await supabase
-          .from('user_id')
-          .insert([{ username: username, balance: 0 }])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating user:', insertError);
-          return false;
-        }
-
-        set({ user: newUser as User, isLoading: false });
-      } else {
-        set({ user: existingUser as User, isLoading: false });
-      }
-
-      localStorage.setItem('username', username);
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    } finally {
-      set({ isLoading: false });
+      useAuthStore.setState({ user: newUser, isLoading: false });
+    } else {
+      useAuthStore.setState({ user: userData, isLoading: false });
     }
-  },
-  logout: () => {
-    localStorage.removeItem('username');
-    supabase.auth.signOut();
-    set({ user: null });
-  },
-  loadUser: async () => {
-    try {
-      set({ isLoading: true });
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session.session) {
-        const username = localStorage.getItem('username');
-        if (!username) {
-          set({ isLoading: false });
-          return;
-        }
-
-        const { data: user, error } = await supabase
-          .from('user_id')
-          .select('*')
-          .eq('username', username)
-          .single();
-
-        if (error) {
-          console.error('Error loading user:', error);
-          localStorage.removeItem('username');
-          set({ user: null, isLoading: false });
-          return;
-        }
-
-        set({ user: user as User, isLoading: false });
-      } else {
-        const { data: user, error } = await supabase
-          .from('user_id')
-          .select('*')
-          .eq('id', session.session.user.id)
-          .single();
-
-        if (error) {
-          console.error('Error loading user:', error);
-          set({ user: null, isLoading: false });
-          return;
-        }
-
-        set({ user: user as User, isLoading: false });
-      }
-    } catch (error) {
-      console.error('Load user error:', error);
-      set({ isLoading: false });
-    }
-  },
-  loginWithDiscord: async () => {
-    try {
-      set({ isLoading: true });
-      const { data: session } = await supabase.auth.getSession();
-
-      if (session.session) {
-        const { data: user, error } = await supabase
-          .from('user_id')
-          .select('*')
-          .eq('id', session.session.user.id)
-          .single();
-
-        if (error) {
-          console.error('Error loading user:', error);
-          return false;
-        }
-
-        set({ user: user as User, isLoading: false });
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('Discord login error:', error);
-      return false;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-}));
+  } catch (error) {
+    console.error('Sync user error:', error);
+    throw error;
+  }
+}
