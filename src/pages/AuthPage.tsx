@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,47 @@ import {
 } from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 const AuthPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { user } = useAuthStore();
+  const { user, login } = useAuthStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
-  const handleDiscordLogin = () => {
-    // For mock purposes, show a success message
-    // In a real app, this would redirect to Discord OAuth
-    toast({
-      title: "Login Successful",
-      description: "You've been successfully logged in with Discord",
-    });
-    
-    setIsDialogOpen(false);
+  useEffect(() => {
+    // If user is already logged in, redirect to home
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+  
+  const handleDiscordLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: 'https://ifmrpxcnhebocyvcbcpn.supabase.co/auth/v1/callback'
+        }
+      });
+      
+      if (error) {
+        console.error("Discord login error:", error);
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "An unexpected error occurred.",
+      });
+    }
   };
   
   return (
@@ -54,10 +80,10 @@ const AuthPage = () => {
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#1a1a1f] border border-pink-pastel">
+        <DialogContent className="sm:max-w-[425px] bg-[#1a1a1f] border border-pink-pastel help-dialog">
           <DialogHeader>
-            <DialogTitle>Discord Authentication</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl text-pink-DEFAULT">Discord Authentication</DialogTitle>
+            <DialogDescription className="text-gray-300">
               Connect your Discord account to continue.
             </DialogDescription>
           </DialogHeader>
@@ -84,7 +110,7 @@ const AuthPage = () => {
             
             <Button 
               onClick={handleDiscordLogin} 
-              className="button-3d shine-effect w-full"
+              className="button-3d shine-effect w-full bg-[#5865F2] hover:bg-[#4752c4]"
             >
               Authorize with Discord
             </Button>

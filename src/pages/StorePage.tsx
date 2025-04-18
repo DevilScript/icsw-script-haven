@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { 
   Loader2, 
   ShoppingCart, 
-  AlertCircle
+  AlertCircle,
+  PackageOpen
 } from "lucide-react";
 
 const StorePage = () => {
@@ -36,6 +37,12 @@ const StorePage = () => {
     fetchMaps();
     fetchKeyCount();
   }, []);
+  
+  useEffect(() => {
+    if (selectedMap) {
+      fetchKeyCount();
+    }
+  }, [selectedMap]);
 
   // Fetch available maps from Supabase
   const fetchMaps = async () => {
@@ -304,7 +311,7 @@ const StorePage = () => {
                 onValueChange={handleMapSelect}
                 disabled={isLoading}
               >
-                <SelectTrigger className="bg-black/40 border-pink-pastel/40 focus:ring-pink-DEFAULT h-12">
+                <SelectTrigger className="bg-black/40 border-pink-pastel/40 focus:ring-ring h-12">
                   <SelectValue placeholder="Select a map" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1a1f] border-pink-pastel/40">
@@ -327,7 +334,9 @@ const StorePage = () => {
                   <h3 className="text-2xl font-semibold text-pink-DEFAULT">{selectedMapData.name}</h3>
                   <div className="text-right">
                     <p className="text-sm text-gray-400">Price</p>
-                    <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-DEFAULT to-pink-DEFAULT/70">{selectedMapData.price} Credits</p>
+                    <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-DEFAULT to-pink-DEFAULT/70">
+                      {selectedMapData.price} Credits
+                    </p>
                   </div>
                 </div>
                 
@@ -346,8 +355,16 @@ const StorePage = () => {
                 </div>
                 
                 <div className="flex flex-wrap justify-between items-center gap-4">
-                  <div className="text-sm text-gray-400">
-                    In Stock: <span className={keyCount > 0 ? "text-green-400" : "text-red-400"}>{keyCount > 0 ? "Available" : "Out of Stock"}</span>
+                  <div className="text-sm flex items-center gap-2">
+                    <PackageOpen size={16} />
+                    <span>In Stock: </span> 
+                    <span className={
+                      keyCount <= 0 ? "text-red-300" :
+                      keyCount < 10 ? "text-pink-pastel" :
+                      "text-green-300"
+                    }>
+                      {keyCount} keys
+                    </span>
                   </div>
                   
                   {user ? (

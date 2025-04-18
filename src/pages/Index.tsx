@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Link, Activity } from "lucide-react";
+import { Link, Activity, MessageSquare } from "lucide-react";
 import Contributors from "@/components/Contributors";
 
 const Index = () => {
@@ -30,7 +30,7 @@ const Index = () => {
             Premium scripts for your favorite games with excellent support and secure payment options.
           </p>
 
-          <div className="flex justify-center gap-4 pt-4">
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Button 
               onClick={() => navigate("/auth")}
               className="button-3d px-8 py-7 text-lg rounded-md shine-effect bg-[#222] hover:bg-[#2a2a2a] border border-pink-pastel"
@@ -40,6 +40,15 @@ const Index = () => {
               Login
             </Button>
             
+            <Button 
+              onClick={() => window.open("https://discord.gg/3CFe4KBks2", "_blank")}
+              className="discord-button px-8 py-7 text-lg rounded-md shine-effect border border-[#5865F2]/50"
+              size="lg"
+            >
+              <MessageSquare className="mr-2" size={20} />
+              Join Discord
+            </Button>
+            
             <div className="status-indicator">
               <div className="status-dot"></div>
               <span className="text-green-400 text-sm">Status: Online</span>
@@ -47,7 +56,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Contributors Section - Moved up */}
+        {/* Contributors Section */}
         <Contributors />
 
         {/* Supported Maps & Executors */}
@@ -57,11 +66,11 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Maps</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
                   <span>AnimeFruit</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
                   <span>Basketball Legends</span>
                 </li>
               </ul>
@@ -71,11 +80,11 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Executors</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
                   <span>Awp</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
+                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
                   <span>Wave</span>
                 </li>
               </ul>

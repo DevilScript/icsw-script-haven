@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showNavbar, setShowNavbar] = useState(true);
+  const [isAtTop, setIsAtTop] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
@@ -31,6 +32,7 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      setIsAtTop(currentScrollY < 50);
       setShowNavbar(currentScrollY < lastScrollY || currentScrollY < 100);
       setLastScrollY(currentScrollY);
     };
@@ -79,13 +81,15 @@ const Navbar = () => {
     { name: "Topup", path: "/topup" },
   ];
 
+  const navbarClasses = `fixed w-full z-50 transition-all duration-300 ${
+    isAtTop ? "py-4 bg-transparent" : "py-2 bg-black/40 backdrop-blur-md shadow-lg"
+  } ${
+    showNavbar ? "translate-y-0" : "-translate-y-full"
+  }`;
+
   return (
-    <header 
-      className={`fixed w-full bg-black/40 backdrop-blur-md z-50 transition-transform duration-300 ${
-        showNavbar ? "translate-y-0" : "-translate-y-full"
-      }`}
-    >
-      <div className="container mx-auto px-4 py-4">
+    <header className={navbarClasses}>
+      <div className="container mx-auto px-4">
         <nav className="flex justify-between items-center">
           {/* Brand and Navigation */}
           <div className="flex items-center">
