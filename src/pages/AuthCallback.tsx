@@ -25,9 +25,15 @@ export default function AuthCallback() {
         if (data.session) {
           const user = data.session.user;
           const userMetadata = user?.user_metadata || {};
-          const discordGlobalName = userMetadata.global_name || userMetadata.username || 'Unknown';
+          // ลองดึง display_name, global_name, name, หรือ username
+          const discordGlobalName =
+            userMetadata.display_name ||
+            userMetadata.global_name ||
+            userMetadata.name ||
+            userMetadata.username ||
+            'Unknown';
           const username = user.email || user.id; // ใช้ email หรือ id เป็น username
-          console.log('User metadata:', userMetadata); // Debug log
+          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2)); // Debug log
 
           // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
           const { error: upsertError } = await supabase
