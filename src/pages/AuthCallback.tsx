@@ -1,82 +1,64 @@
-
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthStore } from '@/lib/auth';
+import { syncUserAfterAuth } from '@/lib/supabase';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Get the auth code from the URL
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        
-        if (!code) {
-          toast({
-            variant: "destructive",
-            title: "Authentication Failed",
-            description: "No authentication code received"
-          });
+    const handleCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+
+      if (!code) {
+        toast({
+          title: 'Error',
+          description: 'No authentication code received',
+          variant: 'destructive',
+        });
+        if (window.opener) {
+          window.opener.postMessage({ type: 'auth_error', message: 'No authentication code received' }, '*');
+          window.close();
+        } else {
           navigate('/auth');
-          return;
         }
-        
-        // Exchange the code for a session
+        return;
+      }
+
+      try {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (data.session) {
-          // Get the user's details
-          loadUser();
-          
-          // Auth successful - if in a popup, send a message to opener
-          if (window.opener) {
-            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
-            window.close();
-          } else {
-            // If not a popup, redirect to home
-            toast({
-              title: "Login Successful",
-              description: "Welcome back!"
-            });
-            navigate('/');
-          }
+        if (error) throw error;
+
+        await syncUserAfterAuth(data.session);
+
+        if (window.opener) {
+          window.opener.postMessage({ type: 'auth_success', session: data.session }, '*');
+          window.close();
+        } else {
+          navigate('/');
         }
       } catch (error) {
-        console.error('Auth callback error:', error);
         toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: error instanceof Error ? error.message : "An unexpected error occurred"
+          title: 'Error',
+          description: error.message || 'Authentication failed',
+          variant: 'destructive',
         });
-        navigate('/auth');
+        if (window.opener) {
+          window.opener.postMessage({ type: 'auth_error', message: error.message }, '*');
+          window.close();
+        } else {
+          navigate('/auth');
+        }
       }
     };
 
-    handleAuthCallback();
-  }, [navigate, toast, loadUser]);
+    handleCallback();
+  }, [navigate, toast]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#151518]">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className="text-white">ICS</span>
-          <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
-        </h1>
-        <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
-        <p className="text-gray-400 animate-pulse">Processing authentication...</p>
-      </div>
-    </div>
-  );
+  return <div>Loading...</div>;
 };
 
 export default AuthCallback;
