@@ -20,58 +20,64 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 // Initialize auth state
-supabase.auth.getSession().then(({ data, error }) => {
-  console.log('Initial session:', { data, error }); // Debug log
-  if (error) {
-    console.error('Error fetching initial session:', error);
+const initializeAuth = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    console.log('Initial session:', { data, error }); // Debug log
+    if (error) {
+      console.error('Error fetching initial session:', error);
+      useAuthStore.getState().setIsLoading(false);
+      return;
+    }
+    if (data.session) {
+      useAuthStore.getState().setUser(data.session.user);
+      await fetchNickname(data.session.user.id);
+    }
     useAuthStore.getState().setIsLoading(false);
-    return;
+  } catch (err) {
+    console.error('Unexpected error initializing auth:', err);
+    useAuthStore.getState().setIsLoading(false);
   }
-  if (data.session) {
-    useAuthStore.getState().setUser(data.session.user);
-    // Fetch nickname from user_id
-    supabase
+};
+
+// Fetch nickname from user_id
+const fetchNickname = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
       .from('user_id')
       .select('nickname')
-      .eq('id', data.session.user.id)
-      .single()
-      .then(({ data, error }) => {
-        console.log('Nickname fetch:', { data, error }); // Debug log
-        if (error) {
-          console.error('Error fetching nickname:', error);
-        } else {
-          useAuthStore.getState().setNickname(data?.nickname || null);
-        }
-        useAuthStore.getState().setIsLoading(false);
-      });
-  } else {
+      .eq('id', userId)
+      .single();
+    console.log('Nickname fetch:', { data, error }); // Debug log
+    if (error) {
+      console.error('Error fetching nickname:', error);
+    } else {
+      useAuthStore.getState().setNickname(data?.nickname || null);
+    }
+  } catch (err) {
+    console.error('Unexpected error fetching nickname:', err);
+  }
+};
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange(async (event, session) => {
+  console.log('Auth state change:', { event, session }); // Debug log
+  try {
+    useAuthStore.getState().setUser(session?.user ?? null);
+    if (session?.user) {
+      await fetchNickname(session.user.id);
+    } else {
+      useAuthStore.getState().setNickname(null);
+    }
+    useAuthStore.getState().setIsLoading(false);
+  } catch (err) {
+    console.error('Error handling auth state change:', err);
     useAuthStore.getState().setIsLoading(false);
   }
 });
 
-// Listen for auth state changes
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state change:', { event, session }); // Debug log
-  useAuthStore.getState().setUser(session?.user ?? null);
-  if (session?.user) {
-    supabase
-      .from('user_id')
-      .select('nickname')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data, error }) => {
-        console.log('Nickname fetch on state change:', { data, error }); // Debug log
-        if (error) {
-          console.error('Error fetching nickname:', error);
-        } else {
-          useAuthStore.getState().setNickname(data?.nickname || null);
-        }
-      });
-  } else {
-    useAuthStore.getState().setNickname(null);
-  }
-  useAuthStore.getState().setIsLoading(false);
-});
+// Start initialization
+initializeAuth();
 
 export async function signInWithDiscord() {
   try {
@@ -93,18 +99,28 @@ export async function signInWithDiscord() {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    console.error('Sign out error:', error);
-    throw new Error('ไม่สามารถออกจากระบบได้ กรุณาลองใหม่');
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out error:', error);
+      throw new Error('ไม่สามารถออกจากระบบได้ กรุณาลองใหม่');
+    }
+  } catch (err) {
+    console.error('Unexpected error during sign out:', err);
+    throw err;
   }
 }
 
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error('Error getting user:', error);
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+    return data.user;
+  } catch (err) {
+    console.error('Unexpected error getting user:', err);
     return null;
   }
-  return data.user;
 }
