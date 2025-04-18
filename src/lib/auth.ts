@@ -19,6 +19,11 @@ interface AuthState {
   loadUser: () => Promise<void>;
 }
 
+export async function getSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
