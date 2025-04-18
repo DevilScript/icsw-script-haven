@@ -1,6 +1,7 @@
 
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
+import MapIndicator from "@/components/MapIndicator";
 
 const SupportPage = () => {
   return (
