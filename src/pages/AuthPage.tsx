@@ -44,14 +44,12 @@ const AuthPage = () => {
   }, [user, navigate, toast]);
   
   const handleDiscordLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: true
-        }
-      });
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
       
       if (error) {
         console.error("Discord login error:", error);
@@ -71,16 +69,8 @@ const AuthPage = () => {
         navigate("/");
       } else {
         // Open a popup window for Discord auth
-        const width = 600;
-        const height = 600;
-        const left = window.screenX + (window.outerWidth - width) / 2;
-        const top = window.screenY + (window.outerHeight - height) / 2;
-        
-        const popup = window.open(
-          'about:blank',
-          'discord-login',
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
+        const popup = window.open(data.url, 'discord-login', 'width=600,height=600');
+
         
         if (popup) {
           const { data } = await supabase.auth.signInWithOAuth({
@@ -94,9 +84,9 @@ const AuthPage = () => {
             popup.location.href = data.url;
             
             // Check if popup is closed
-            const checkPopupClosed = setInterval(() => {
-              if (popup.closed) {
-                clearInterval(checkPopupClosed);
+            const interval = setInterval(() => {
+              if (popup?.closed) {
+                clearInterval(interval);
                 // Check for session after popup is closed
                 checkUserSession();
               }
