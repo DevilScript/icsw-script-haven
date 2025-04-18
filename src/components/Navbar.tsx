@@ -28,6 +28,9 @@ const Navbar = () => {
   const { user, nickname, isLoading } = useAuthStore();
   const { toast } = useToast();
 
+  // Debug log
+  console.log('Navbar auth state:', { user, nickname, isLoading });
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -141,7 +144,7 @@ const Navbar = () => {
                       `py-1 relative shine-effect ${
                         isActive
                           ? "text-[rgb(255,179,209)]"
-                          : "text-gray-300 hover:text-white"
+                        : "text-gray-300 hover:text-white"
                       }`
                     }
                   >

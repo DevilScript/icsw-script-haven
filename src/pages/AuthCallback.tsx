@@ -11,6 +11,7 @@ export default function AuthCallback() {
     async function handleAuthCallback() {
       try {
         const { data, error } = await supabase.auth.getSession();
+        console.log('AuthCallback session:', { data, error }); // Debug log
         if (error) {
           console.error('Error getting session:', error);
           toast({
@@ -35,7 +36,7 @@ export default function AuthCallback() {
           console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2));
 
           // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
-          const { error: upsertError } = await supabase
+          const { data: upsertData, error: upsertError } = await supabase
             .from('user_id')
             .upsert(
               {
@@ -49,6 +50,8 @@ export default function AuthCallback() {
               }
             );
 
+          console.log('Upsert result:', { upsertData, upsertError }); // Debug log
+
           if (upsertError) {
             console.error('Error upserting user_id:', upsertError);
             toast({
@@ -61,7 +64,8 @@ export default function AuthCallback() {
           }
 
           // รีเฟรช session เพื่อให้ useAuthStore อัปเดต
-          await supabase.auth.refreshSession();
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          console.log('Refresh session:', { refreshData, refreshError }); // Debug log
 
           toast({
             title: 'สำเร็จ',

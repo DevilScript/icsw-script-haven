@@ -21,6 +21,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Initialize auth state
 supabase.auth.getSession().then(({ data, error }) => {
+  console.log('Initial session:', { data, error }); // Debug log
   if (error) {
     console.error('Error fetching initial session:', error);
     useAuthStore.getState().setIsLoading(false);
@@ -35,6 +36,7 @@ supabase.auth.getSession().then(({ data, error }) => {
       .eq('id', data.session.user.id)
       .single()
       .then(({ data, error }) => {
+        console.log('Nickname fetch:', { data, error }); // Debug log
         if (error) {
           console.error('Error fetching nickname:', error);
         } else {
@@ -49,6 +51,7 @@ supabase.auth.getSession().then(({ data, error }) => {
 
 // Listen for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state change:', { event, session }); // Debug log
   useAuthStore.getState().setUser(session?.user ?? null);
   if (session?.user) {
     supabase
@@ -57,6 +60,7 @@ supabase.auth.onAuthStateChange((event, session) => {
       .eq('id', session.user.id)
       .single()
       .then(({ data, error }) => {
+        console.log('Nickname fetch on state change:', { data, error }); // Debug log
         if (error) {
           console.error('Error fetching nickname:', error);
         } else {
