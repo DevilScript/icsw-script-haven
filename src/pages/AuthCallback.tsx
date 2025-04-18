@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/lib/auth';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { setUser, setIsLoading } = useAuthStore();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -20,13 +22,13 @@ export default function AuthCallback() {
           description: errorDescription || 'An error occurred during authentication.',
           variant: 'destructive',
         });
-        // ปิด popup และ redirect หน้าหลักไปยังหน้าเดิม
         if (window.opener) {
           window.opener.focus();
           window.close();
         } else {
           navigate('/auth');
         }
+        setIsLoading(false);
         return;
       }
 
@@ -43,11 +45,11 @@ export default function AuthCallback() {
         } else {
           navigate('/auth');
         }
+        setIsLoading(false);
         return;
       }
 
       try {
-        // แลก code กับ session
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           console.error('Error exchanging code for session:', error);
@@ -55,11 +57,11 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
+          setUser(data.session.user);
           toast({
             title: 'Success',
             description: 'Successfully logged in!',
           });
-          // ปิด popup และ redirect หน้า opener ไปยังหน้าแรก
           if (window.opener) {
             window.opener.location.href = '/';
             window.close();
@@ -80,11 +82,13 @@ export default function AuthCallback() {
         } else {
           navigate('/auth');
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, setUser, setIsLoading]);
 
   return <div>Loading...</div>;
 }

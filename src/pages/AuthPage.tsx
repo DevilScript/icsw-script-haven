@@ -1,21 +1,15 @@
-import { useState } from 'react';
+import { useAuthStore } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { signInWithOAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, setIsLoading } = useAuthStore();
 
   const handleDiscordLogin = async () => {
     setIsLoading(true);
-    const { error } = await signInWithOAuth('discord');
-    if (error) {
-      console.error('Discord login failed:', error);
-    }
-    setIsLoading(false);
+    await signInWithOAuth('discord');
+    // isLoading จะถูกจัดการใน auth.ts
   };
 
   return (

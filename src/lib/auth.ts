@@ -1,12 +1,29 @@
+import { create } from 'zustand';
 import { supabase } from './supabase';
 import { toast } from '@/hooks/use-toast';
 
+interface AuthState {
+  user: any | null;
+  isLoading: boolean;
+  setUser: (user: any | null) => void;
+  setIsLoading: (isLoading: boolean) => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isLoading: false,
+  setUser: (user) => set({ user }),
+  setIsLoading: (isLoading) => set({ isLoading }),
+}));
+
 export const signInWithOAuth = async (provider: 'discord') => {
   try {
+    useAuthStore.getState().setIsLoading(true);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        skipBrowserRedirect: true, // ป้องกัน redirect ในหน้าเว็บหลัก
       },
     });
 
@@ -20,7 +37,6 @@ export const signInWithOAuth = async (provider: 'discord') => {
       return { error };
     }
 
-    // ตรวจสอบว่า popup ถูกเปิดหรือไม่
     if (data.url) {
       const popup = window.open(data.url, 'oauth_popup', 'width=600,height=600');
       if (!popup) {
@@ -32,20 +48,24 @@ export const signInWithOAuth = async (provider: 'discord') => {
         return { error: new Error('Popup blocked') };
       }
 
-      // เพิ่มการตรวจสอบเมื่อ popup ปิด
-      const checkPopupClosed = setInterval(() => {
+      const checkPopupClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkPopupClosed);
-          // ตรวจสอบ session หลังจาก popup ปิด
-          supabase.auth.getSession().then(({ data: { session }, error }) => {
-            if (error || !session) {
-              toast({
-                title: 'Error',
-                description: 'Authentication failed. Please try again.',
-                variant: 'destructive',
-              });
-            }
-          });
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error || !session) {
+            toast({
+              title: 'Error',
+              description: 'Authentication failed. Please try again.',
+              variant: 'destructive',
+            });
+          } else {
+            useAuthStore.getState().setUser(session.user);
+            toast({
+              title: 'Success',
+              description: 'Successfully logged in!',
+            });
+          }
+          useAuthStore.getState().setIsLoading(false);
         }
       }, 500);
     }
@@ -58,19 +78,37 @@ export const signInWithOAuth = async (provider: 'discord') => {
       description: 'An unexpected error occurred. Please try again.',
       variant: 'destructive',
     });
+    useAuthStore.getState().setIsLoading(false);
     return { error };
   }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    useAuthStore.getState().setUser(null);
+    window.location.href = '/auth';
+  } catch (error) {
+    console.error('Unexpected error during sign out:', error);
     toast({
       title: 'Error',
-      description: error.message,
+      description: 'An unexpected error occurred. Please try again.',
       variant: 'destructive',
     });
-    return;
   }
-  window.location.href = '/auth';
 };
+
+// Initialize auth state
+supabase.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    useAuthStore.getState().setUser(session.user);
+  }
+});
