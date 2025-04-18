@@ -44,31 +44,80 @@ const AuthPage = () => {
   }, [user, navigate, toast]);
   
   const handleDiscordLogin = async () => {
-    setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      setIsLoading(true);
+      // Open a popup window for Discord auth
+      const width = 600;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        'about:blank',
+        'discord-login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      if (!popup) {
+        setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Popup Blocked",
+          description: "Please allow popups and try again",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
           redirectTo: import.meta.env.VITE_SUPABASE_SITE_URL || 'http://localhost:5173/auth/callback',
           scopes: 'identify email',
-        }
+        },
       });
       
       if (error) {
+        setIsLoading(false);
+        popup.close();
         toast({
           variant: "destructive",
           title: "Login Failed",
           description: error.message,
         });
+        return;
+      }
+      
+      if (data?.url) {
+        popup.location.href = data.url;
+        
+        // Check if popup is closed
+        const checkPopupClosed = setInterval(async () => {
+          if (popup.closed) {
+            clearInterval(checkPopupClosed);
+            setIsLoading(false);
+            // Check for session after popup is closed
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session) {
+              navigate('/');
+            }
+          }
+        }, 500);
+      } else {
+        setIsLoading(false);
+        popup.close();
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Unable to initiate Discord login",
+        });
       }
     } catch (error) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Login Failed",
         description: "An unexpected error occurred.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
   
@@ -89,7 +138,7 @@ const AuthPage = () => {
           
           <Button
             className="discord-button-3d px-6 py-6 text-lg rounded-md shine-effect w-full"
-            onClick={() => setIsDialogOpen(true)}
+            onClick={handleDiscordLogin}
             disabled={isLoading}
           >
             {isLoading ? "Loading..." : "Login with Discord"}
