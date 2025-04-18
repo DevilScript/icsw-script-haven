@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -7,6 +6,7 @@ import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
 import Contributors from "@/components/Contributors";
+import MapIndicator from "@/components/MapIndicator";
 
 const Index = () => {
   const { loadUser, user, isLoading } = useAuthStore();
@@ -57,12 +57,10 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Maps</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
-                  <span>AnimeFruit</span>
+                  <MapIndicator name="AnimeFruit" />
                 </li>
                 <li className="flex items-center">
-                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
-                  <span>Basketball Legends</span>
+                  <MapIndicator name="Basketball Legends" />
                 </li>
               </ul>
             </GlassCard>
@@ -71,12 +69,10 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Executors</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
-                  <span>Awp</span>
+                  <MapIndicator name="Awp" />
                 </li>
                 <li className="flex items-center">
-                  <span className="h-3 w-3 bg-pink-DEFAULT rounded-full mr-2"></span>
-                  <span>Wave</span>
+                  <MapIndicator name="Wave" />
                 </li>
               </ul>
             </GlassCard>
