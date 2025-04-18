@@ -1,113 +1,82 @@
+
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/lib/auth';
 
-export default function AuthCallback() {
-  const [searchParams] = useSearchParams();
+const AuthCallback = () => {
   const navigate = useNavigate();
-  const { setIsLoading, login } = useAuthStore();
+  const { toast } = useToast();
+  const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    const handleCallback = async () => {
-      const error = searchParams.get('error');
-      const errorDescription = searchParams.get('error_description');
-      const code = searchParams.get('code');
-
-      console.log('Callback params:', { error, errorDescription, code }); // Debug
-
-      if (error || errorDescription) {
-        console.error('Auth callback error:', { error, errorDescription });
-        toast({
-          title: 'Authentication Error',
-          description: errorDescription || 'An error occurred during authentication.',
-          variant: 'destructive',
-        });
-        if (window.opener) {
-          window.opener.focus();
-          window.close();
-        } else {
-          navigate('/auth');
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      if (!code) {
-        console.warn('No authentication code received');
-        toast({
-          title: 'Error',
-          description: 'No authentication code received. Please try again.',
-          variant: 'destructive',
-        });
-        if (window.opener) {
-          window.opener.focus();
-          window.close();
-        } else {
-          navigate('/auth');
-        }
-        setIsLoading(false);
-        return;
-      }
-
+    const handleAuthCallback = async () => {
       try {
+        // Get the auth code from the URL
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        
+        if (!code) {
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: "No authentication code received"
+          });
+          navigate('/auth');
+          return;
+        }
+        
+        // Exchange the code for a session
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        console.log('Exchange session:', data, 'Error:', error); // Debug
+        
         if (error) {
-          console.error('Error exchanging code for session:', error);
           throw error;
         }
-
+        
         if (data.session) {
-          const username = data.session.user?.user_metadata?.name || data.session.user?.email?.split('@')[0] || 'discord_user';
-          console.log('Logging in with username:', username); // Debug
-          const loginSuccess = await login(username);
-          if (loginSuccess) {
-            toast({
-              title: 'Success',
-              description: 'Successfully logged in with Discord!',
-            });
-            if (window.opener) {
-              window.opener.location.href = '/';
-              window.close();
-            } else {
-              navigate('/');
-            }
+          // Get the user's details
+          loadUser();
+          
+          // Auth successful - if in a popup, send a message to opener
+          if (window.opener) {
+            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+            window.close();
           } else {
+            // If not a popup, redirect to home
             toast({
-              title: 'Error',
-              description: 'Failed to log in with Discord user.',
-              variant: 'destructive',
+              title: "Login Successful",
+              description: "Welcome back!"
             });
-            if (window.opener) {
-              window.opener.focus();
-              window.close();
-            } else {
-              navigate('/auth');
-            }
+            navigate('/');
           }
         }
       } catch (error) {
-        console.error('Unexpected error in auth callback:', error);
+        console.error('Auth callback error:', error);
         toast({
-          title: 'Error',
-          description: 'An unexpected error occurred. Please try again.',
-          variant: 'destructive',
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: error instanceof Error ? error.message : "An unexpected error occurred"
         });
-        if (window.opener) {
-          window.opener.focus();
-          window.close();
-        } else {
-          navigate('/auth');
-        }
-      } finally {
-        setIsLoading(false);
+        navigate('/auth');
       }
     };
 
-    handleCallback();
-  }, [searchParams, navigate, login, setIsLoading]);
+    handleAuthCallback();
+  }, [navigate, toast, loadUser]);
 
-  return <div>Loading...</div>;
-}
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#151518]">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-2">
+          <span className="text-white">ICS</span>
+          <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
+        </h1>
+        <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
+        <p className="text-gray-400 animate-pulse">Processing authentication...</p>
+      </div>
+    </div>
+  );
+};
+
+export default AuthCallback;
