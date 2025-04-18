@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -137,7 +136,7 @@
 /* Define components with the @layer components directive */
 @layer components {
   .key-input {
-    @apply bg-[#12121a] border-pink-pastel/30 focus:border-pink-pastel focus:ring-2 focus:ring-pink-DEFAULT focus:ring-opacity-50;
+    @apply bg-[#12121a] border-pink-pastel/30 focus:border-pink-pastel focus:ring-2 focus:ring-ring focus:ring-opacity-50;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
