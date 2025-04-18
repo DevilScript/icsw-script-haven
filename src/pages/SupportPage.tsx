@@ -1,4 +1,3 @@
-
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import MapIndicator from "@/components/MapIndicator";
@@ -19,12 +18,10 @@ const SupportPage = () => {
             <h2 className="text-xl font-semibold mb-4">Supported Maps</h2>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-center">
-                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
-                <span>AnimeFruit</span>
+                <MapIndicator name="AnimeFruit" />
               </li>
               <li className="flex items-center">
-                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
-                <span>Basketball Legends</span>
+                <MapIndicator name="Basketball Legends" />
               </li>
             </ul>
           </GlassCard>
@@ -33,12 +30,10 @@ const SupportPage = () => {
             <h2 className="text-xl font-semibold mb-4">Supported Executors</h2>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-center">
-                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
-                <span>Awp</span>
+                <MapIndicator name="Awp" />
               </li>
               <li className="flex items-center">
-                <span className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></span>
-                <span>Wave</span>
+                <MapIndicator name="Wave" />
               </li>
             </ul>
           </GlassCard>

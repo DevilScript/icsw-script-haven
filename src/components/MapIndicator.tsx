@@ -1,15 +1,15 @@
 import React from 'react';
-import './MapIndicator.css';
+import './index.css';
 
 interface MapIndicatorProps {
-  mapName: string;
+  name: string;
 }
 
-const MapIndicator: React.FC<MapIndicatorProps> = ({ mapName }) => {
+const MapIndicator: React.FC<MapIndicatorProps> = ({ name }) => {
   return (
     <span className="map-indicator">
       <span className="dot pastel-dot"></span>
-      {mapName}
+      {name}
     </span>
   );
 };
