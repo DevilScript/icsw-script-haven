@@ -1,5 +1,5 @@
 import React from 'react';
-import './index.css';
+import './MapIndicator.css';
 
 interface MapIndicatorProps {
   name: string;
