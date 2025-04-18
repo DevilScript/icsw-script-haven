@@ -60,8 +60,6 @@ export default {
           transparent: "rgba(255, 179, 209, 0.15)",
           hover: "rgba(255, 209, 229, 1)",
         },
-        'pastel-green': "#BDFFBC",
-        'pastel-red': "#FFB8B8",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -81,16 +79,11 @@ export default {
           "0%, 100%": { opacity: "0.6", transform: "scale(1)" },
           "50%": { opacity: "0.3", transform: "scale(1.1)" },
         },
-        glow: {
-          "0%, 100%": { filter: "drop-shadow(0 0 2px rgba(255, 179, 209, 0.7))" },
-          "50%": { filter: "drop-shadow(0 0 10px rgba(255, 179, 209, 0.9))" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
-        "glow": "glow 2s ease-in-out infinite",
       },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],

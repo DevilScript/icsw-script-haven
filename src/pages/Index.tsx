@@ -57,11 +57,11 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Maps</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="text-pink-DEFAULT mr-2">•</span>
+                  <span className="h-3 w-3 bg-pastel-green rounded-full mr-2"></span>
                   <span>AnimeFruit</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-pink-DEFAULT mr-2">•</span>
+                  <span className="h-3 w-3 bg-pastel-green rounded-full mr-2"></span>
                   <span>Basketball Legends</span>
                 </li>
               </ul>
@@ -71,11 +71,11 @@ const Index = () => {
               <h2 className="text-xl font-semibold mb-4 text-pink-DEFAULT">Supported Executors</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-center">
-                  <span className="text-pink-DEFAULT mr-2">•</span>
+                  <span className="h-3 w-3 bg-pastel-green rounded-full mr-2"></span>
                   <span>Awp</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="text-pink-DEFAULT mr-2">•</span>
+                  <span className="h-3 w-3 bg-pastel-green rounded-full mr-2"></span>
                   <span>Wave</span>
                 </li>
               </ul>
