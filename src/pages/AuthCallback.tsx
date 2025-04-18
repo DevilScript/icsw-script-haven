@@ -1,82 +1,94 @@
-
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { useAuthStore } from '@/lib/auth';
+import { supabase } from '../integrations/supabase/client';
+import { toast } from '../hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
-const AuthCallback = () => {
+export default function AuthCallback() {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    async function handleAuthCallback() {
       try {
-        // Get the auth code from the URL
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        
-        if (!code) {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
           toast({
-            variant: "destructive",
-            title: "Authentication Failed",
-            description: "No authentication code received"
+            title: 'ข้อผิดพลาด',
+            description: 'ไม่สามารถดึงข้อมูลเซสชันได้ กรุณาลองใหม่',
+            variant: 'destructive',
           });
           navigate('/auth');
           return;
         }
-        
-        // Exchange the code for a session
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        
-        if (error) {
-          throw error;
-        }
-        
+
         if (data.session) {
-          // Get the user's details
-          loadUser();
-          
-          // Auth successful - if in a popup, send a message to opener
-          if (window.opener) {
-            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
-            window.close();
-          } else {
-            // If not a popup, redirect to home
+          const user = data.session.user;
+          const userMetadata = user?.user_metadata || {};
+          const discordGlobalName = userMetadata.global_name || userMetadata.username || 'Unknown';
+          const username = user.email || user.id; // ใช้ email หรือ id เป็น username
+          console.log('User metadata:', userMetadata); // Debug log
+
+          // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
+          const { error: upsertError } = await supabase
+            .from('user_id')
+            .upsert(
+              {
+                id: user.id,
+                username: username,
+                nickname: discordGlobalName,
+                created_at: new Date().toISOString(),
+              },
+              {
+                onConflict: 'id', // อัปเดตถ้ามี id อยู่แล้ว
+              }
+            );
+
+          if (upsertError) {
+            console.error('Error upserting user_id:', upsertError);
             toast({
-              title: "Login Successful",
-              description: "Welcome back!"
+              title: 'ข้อผิดพลาด',
+              description: 'ไม่สามารถบันทึกข้อมูลผู้ใช้ได้ กรุณาติดต่อฝ่ายสนับสนุน',
+              variant: 'destructive',
             });
-            navigate('/');
+            navigate('/auth');
+            return;
           }
+
+          toast({
+            title: 'สำเร็จ',
+            description: `ยินดีต้อนรับ ${discordGlobalName}!`,
+          });
+          navigate('/'); // ไปที่หน้าแรก
+        } else {
+          toast({
+            title: 'ข้อผิดพลาด',
+            description: 'ไม่พบเซสชันผู้ใช้ กรุณาลองใหม่',
+            variant: 'destructive',
+          });
+          navigate('/auth');
         }
-      } catch (error) {
-        console.error('Auth callback error:', error);
+      } catch (err) {
+        console.error('Unexpected error:', err);
         toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: error instanceof Error ? error.message : "An unexpected error occurred"
+          title: 'ข้อผิดพลาด',
+          description: 'เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่',
+          variant: 'destructive',
         });
         navigate('/auth');
       }
-    };
+    }
 
     handleAuthCallback();
-  }, [navigate, toast, loadUser]);
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#151518]">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className="text-white">ICS</span>
-          <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
-        </h1>
-        <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
-        <p className="text-gray-400 animate-pulse">Processing authentication...</p>
+        <h1 className="text-2xl font-bold">กำลังดำเนินการ...</h1>
+        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ</p>
+        <Button disabled>กำลังโหลด...</Button>
       </div>
     </div>
   );
-};
-
-export default AuthCallback;
+}
