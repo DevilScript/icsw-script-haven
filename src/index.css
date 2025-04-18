@@ -134,174 +134,180 @@
   }
 }
 
-.hover-scale {
-  @apply transition-transform duration-300;
-}
-
-.hover-scale:hover {
-  @apply transform scale-105;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1a1a1f;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 179, 209, 0.3);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 179, 209, 0.5);
-}
-
-/* Section divider */
-.section-divider {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 179, 209, 0.5), transparent);
-  margin: 2rem 0;
-}
-
-/* Modernized status indicator */
-.status-indicator {
-  @apply flex items-center gap-3 px-5 py-3 rounded-full bg-[#222] backdrop-blur-md;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 179, 209, 0.15);
-  transition: all 0.3s ease;
-}
-
-.status-indicator:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-.status-dot {
-  @apply w-4 h-4 rounded-full bg-green-400;
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
+/* Define components with the @layer components directive */
+@layer components {
+  .key-input {
+    @apply bg-[#12121a] border-pink-pastel/30 focus:border-pink-pastel focus:ring-2 focus:ring-pink-DEFAULT focus:ring-opacity-50;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-  50% {
-    opacity: 0.6;
-    transform: scale(0.85);
+
+  .hover-scale {
+    @apply transition-transform duration-300;
   }
-}
-
-/* Stylized cards for all sections */
-.feature-card {
-  @apply p-6 rounded-lg bg-[#191920]/90 backdrop-blur-md transition-all duration-300;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-.feature-card:hover {
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 179, 209, 0.2);
-  transform: translateY(-5px);
-  background-color: rgba(30, 30, 40, 0.9);
-}
-
-/* Script access styling */
-.script-container {
-  @apply rounded-lg p-5 bg-[#1d1d25] overflow-hidden;
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-.key-input {
-  @apply bg-[#12121a] border-pink-pastel/30 focus:border-pink-pastel focus:ring-pink-DEFAULT/50;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* Beautiful help dialog styling */
-.help-dialog {
-  @apply bg-[#1d1d25] backdrop-blur-xl border border-pink-pastel/20;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-/* Enhanced animations */
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  
+  .hover-scale:hover {
+    @apply transform scale-105;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  /* Status indicator */
+  .status-indicator {
+    @apply flex items-center gap-3 px-5 py-3 rounded-full bg-[#222] backdrop-blur-md;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 179, 209, 0.15);
+    transition: all 0.3s ease;
+  }
+  
+  .status-indicator:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .status-dot {
+    @apply w-4 h-4 rounded-full bg-green-400;
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
+    animation: pulse 2s infinite;
+  }
+  
+  /* Feature card styling */
+  .feature-card {
+    @apply p-6 rounded-lg bg-[#191920]/90 backdrop-blur-md transition-all duration-300;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  .feature-card:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 179, 209, 0.2);
+    transform: translateY(-5px);
+    background-color: rgba(30, 30, 40, 0.9);
+  }
+  
+  /* Script container */
+  .script-container {
+    @apply rounded-lg p-5 bg-[#1d1d25] overflow-hidden;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  
+  /* Help dialog */
+  .help-dialog {
+    @apply bg-[#1d1d25] backdrop-blur-xl border border-pink-pastel/20;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  
+  /* Script display */
+  .script-display {
+    @apply p-5 rounded-lg font-mono text-sm;
+    background: linear-gradient(to bottom, #1a1a22, #13131a);
+    border: 1px solid rgba(255, 179, 209, 0.15);
+    box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .script-highlight {
+    color: rgb(255, 179, 209);
+    font-weight: bold;
+  }
+  
+  /* History item */
+  .history-item {
+    @apply p-4 rounded-lg mb-3 bg-black/20 border border-pink-pastel/20;
+    transition: all 0.2s ease;
+  }
+  
+  .history-item:hover {
+    background: rgba(30, 30, 40, 0.4);
+    border-color: rgba(255, 179, 209, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  /* HWID Reset button */
+  .hwid-reset-button {
+    @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md;
+    background: linear-gradient(to bottom, #332e2e, #2a2424);
+    border: 1px solid rgba(255, 179, 209, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+  }
+  
+  .hwid-reset-button:hover {
+    background: linear-gradient(to bottom, #3a3434, #302828);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25);
   }
 }
 
-.animate-fade-up {
-  animation: fadeUp 0.5s ease-out forwards;
-}
-
-/* Shimmer effect for loading states */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
+@layer utilities {
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
-  100% {
-    background-position: 200% 0;
+  
+  ::-webkit-scrollbar-track {
+    background: #1a1a1f;
   }
-}
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 179, 209, 0.3);
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 179, 209, 0.5);
+  }
+  
+  /* Section divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 179, 209, 0.5), transparent);
+    margin: 2rem 0;
+  }
 
-/* Improve Script display */
-.script-display {
-  @apply p-5 rounded-lg font-mono text-sm;
-  background: linear-gradient(to bottom, #1a1a22, #13131a);
-  border: 1px solid rgba(255, 179, 209, 0.15);
-  box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.2);
-}
+  /* Enhanced animations */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out forwards;
+  }
 
-.script-highlight {
-  color: rgb(255, 179, 209);
-  font-weight: bold;
-}
-
-/* History item styling */
-.history-item {
-  @apply p-4 rounded-lg mb-3 bg-black/20 border border-pink-pastel/20;
-  transition: all 0.2s ease;
-}
-
-.history-item:hover {
-  background: rgba(30, 30, 40, 0.4);
-  border-color: rgba(255, 179, 209, 0.3);
-  transform: translateY(-2px);
-}
-
-/* HWID Reset button */
-.hwid-reset-button {
-  @apply flex items-center justify-center gap-2 px-4 py-2 rounded-md;
-  background: linear-gradient(to bottom, #332e2e, #2a2424);
-  border: 1px solid rgba(255, 179, 209, 0.2);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-}
-
-.hwid-reset-button:hover {
-  background: linear-gradient(to bottom, #3a3434, #302828);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25);
+  /* Animation keyframes */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(0.85);
+    }
+  }
+  
+  /* Shimmer effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
 }
