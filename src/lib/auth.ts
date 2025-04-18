@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface UserData {
   id: string;
   username: string; // This is used consistently throughout the app
+  nickname: string;
   balance: number;
   keys?: string[];
   maps?: string[];
