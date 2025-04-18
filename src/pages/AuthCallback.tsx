@@ -1,82 +1,90 @@
-
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { useAuthStore } from '@/lib/auth';
 
-const AuthCallback = () => {
+export default function AuthCallback() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Get the auth code from the URL
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        
-        if (!code) {
-          toast({
-            variant: "destructive",
-            title: "Authentication Failed",
-            description: "No authentication code received"
-          });
+    const handleCallback = async () => {
+      const error = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+      const code = searchParams.get('code');
+
+      if (error || errorDescription) {
+        console.error('Auth callback error:', { error, errorDescription });
+        toast({
+          title: 'Authentication Error',
+          description: errorDescription || 'An error occurred during authentication.',
+          variant: 'destructive',
+        });
+        // ปิด popup และ redirect หน้าหลักไปยังหน้าเดิม
+        if (window.opener) {
+          window.opener.focus();
+          window.close();
+        } else {
           navigate('/auth');
-          return;
         }
-        
-        // Exchange the code for a session
+        return;
+      }
+
+      if (!code) {
+        console.warn('No authentication code received');
+        toast({
+          title: 'Error',
+          description: 'No authentication code received. Please try again.',
+          variant: 'destructive',
+        });
+        if (window.opener) {
+          window.opener.focus();
+          window.close();
+        } else {
+          navigate('/auth');
+        }
+        return;
+      }
+
+      try {
+        // แลก code กับ session
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        
         if (error) {
+          console.error('Error exchanging code for session:', error);
           throw error;
         }
-        
+
         if (data.session) {
-          // Get the user's details
-          loadUser();
-          
-          // Auth successful - if in a popup, send a message to opener
+          toast({
+            title: 'Success',
+            description: 'Successfully logged in!',
+          });
+          // ปิด popup และ redirect หน้า opener ไปยังหน้าแรก
           if (window.opener) {
-            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+            window.opener.location.href = '/';
             window.close();
           } else {
-            // If not a popup, redirect to home
-            toast({
-              title: "Login Successful",
-              description: "Welcome back!"
-            });
             navigate('/');
           }
         }
       } catch (error) {
-        console.error('Auth callback error:', error);
+        console.error('Unexpected error in auth callback:', error);
         toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: error instanceof Error ? error.message : "An unexpected error occurred"
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
         });
-        navigate('/auth');
+        if (window.opener) {
+          window.opener.focus();
+          window.close();
+        } else {
+          navigate('/auth');
+        }
       }
     };
 
-    handleAuthCallback();
-  }, [navigate, toast, loadUser]);
+    handleCallback();
+  }, [searchParams, navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#151518]">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className="text-white">ICS</span>
-          <span className="text-[rgb(255,179,209)] pink-glow animate-glow">W</span>
-        </h1>
-        <div className="w-20 h-1 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent mx-auto my-4"></div>
-        <p className="text-gray-400 animate-pulse">Processing authentication...</p>
-      </div>
-    </div>
-  );
-};
-
-export default AuthCallback;
+  return <div>Loading...</div>;
+}

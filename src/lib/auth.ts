@@ -1,111 +1,76 @@
-
-import { create } from 'zustand';
 import { supabase } from './supabase';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
-interface User {
-  id: string;
-  username: string; // This is used consistently throughout the app
-  balance: number;
-  keys?: string[];
-  maps?: string[];
-}
+export const signInWithOAuth = async (provider: 'discord') => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
 
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  login: (username: string) => Promise<boolean>;
-  logout: () => void;
-  loadUser: () => Promise<void>;
-}
+    if (error) {
+      console.error('OAuth sign-in error:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return { error };
+    }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isLoading: true,
-  login: async (username: string) => {
-    try {
-      set({ isLoading: true });
-      
-      // Check if user exists
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('user_id')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking user:', fetchError);
-        return false;
+    // ตรวจสอบว่า popup ถูกเปิดหรือไม่
+    if (data.url) {
+      const popup = window.open(data.url, 'oauth_popup', 'width=600,height=600');
+      if (!popup) {
+        toast({
+          title: 'Error',
+          description: 'Unable to open authentication popup. Please allow popups for this site.',
+          variant: 'destructive',
+        });
+        return { error: new Error('Popup blocked') };
       }
 
-      // If user doesn't exist, create a new one
-      if (!existingUser) {
-        const { data: newUser, error: insertError } = await supabase
-          .from('user_id')
-          .insert([
-            { username: username, balance: 0 }
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating user:', insertError);
-          return false;
+      // เพิ่มการตรวจสอบเมื่อ popup ปิด
+      const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkPopupClosed);
+          // ตรวจสอบ session หลังจาก popup ปิด
+          supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error || !session) {
+              toast({
+                title: 'Error',
+                description: 'Authentication failed. Please try again.',
+                variant: 'destructive',
+              });
+            }
+          });
         }
-
-        set({ 
-          user: newUser as User,
-          isLoading: false 
-        });
-      } else {
-        set({ 
-          user: existingUser as User,
-          isLoading: false 
-        });
-      }
-
-      // Save to local storage
-      localStorage.setItem('username', username);
-      return true;
-
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    } finally {
-      set({ isLoading: false });
+      }, 500);
     }
-  },
-  logout: () => {
-    localStorage.removeItem('username');
-    set({ user: null });
-  },
-  loadUser: async () => {
-    try {
-      set({ isLoading: true });
-      const username = localStorage.getItem('username');
 
-      if (!username) {
-        set({ isLoading: false });
-        return;
-      }
-
-      const { data: user, error } = await supabase
-        .from('user_id')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (error) {
-        console.error('Error loading user:', error);
-        localStorage.removeItem('username');
-        set({ user: null, isLoading: false });
-        return;
-      }
-
-      set({ user: user as User, isLoading: false });
-    } catch (error) {
-      console.error('Load user error:', error);
-      set({ isLoading: false });
-    }
+    return { data };
+  } catch (error) {
+    console.error('Unexpected error during OAuth sign-in:', error);
+    toast({
+      title: 'Error',
+      description: 'An unexpected error occurred. Please try again.',
+      variant: 'destructive',
+    });
+    return { error };
   }
-}));
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    toast({
+      title: 'Error',
+      description: error.message,
+      variant: 'destructive',
+    });
+    return;
+  }
+  window.location.href = '/auth';
+};
