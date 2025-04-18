@@ -16,6 +16,7 @@ export const keyStorage = createClient(keyStorageUrl, keyStorageAnonKey);
 export interface UserData {
   id: string;
   username: string;
+  nickname: string;
   balance: number;
   keys?: string[];
   maps?: string[];

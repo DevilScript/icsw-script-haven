@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { supabase } from './supabase';
 import { useToast } from '@/hooks/use-toast';
 
-interface User {
+interface UserData {
   id: string;
   username: string; // This is used consistently throughout the app
   balance: number;
