@@ -54,15 +54,16 @@ const Navbar = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('user_id') // เปลี่ยนจาก 'profiles' เป็น 'user_id'
           .select('nickname, balance')
           .eq('id', session.user.id)
           .single();
         if (data) {
-          setNickname(data.nickname);
+          setNickname(data.nickname || 'User');
           setBalance(data.balance || 0);
         }
         if (error) {
+          console.error('Error fetching user data:', error);
           toast({ title: 'Error', description: 'Failed to fetch user data' });
         }
       }
