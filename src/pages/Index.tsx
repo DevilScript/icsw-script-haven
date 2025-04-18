@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Link, Activity, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import Contributors from "@/components/Contributors";
 
 const Index = () => {
@@ -32,17 +32,8 @@ const Index = () => {
 
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Button 
-              onClick={() => navigate("/auth")}
-              className="button-3d px-8 py-7 text-lg rounded-md shine-effect bg-[#222] hover:bg-[#2a2a2a] border border-pink-pastel"
-              size="lg"
-            >
-              <Link className="mr-2" size={20} />
-              Login
-            </Button>
-            
-            <Button 
               onClick={() => window.open("https://discord.gg/3CFe4KBks2", "_blank")}
-              className="discord-button px-8 py-7 text-lg rounded-md shine-effect border border-[#5865F2]/50"
+              className="discord-button-3d px-8 py-7 text-lg rounded-md shine-effect border border-[#5865F2]/50"
               size="lg"
             >
               <MessageSquare className="mr-2" size={20} />

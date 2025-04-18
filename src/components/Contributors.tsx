@@ -12,15 +12,13 @@ const Contributors = () => {
         </h2>
         
         <div className="flex flex-col items-center">
-          <div className="relative w-32 h-32 mb-4 overflow-hidden transform hover:scale-105 transition-all duration-300">
-            <div className="w-32 h-32 rounded-full overflow-hidden">
-              <img 
-                src="https://i.ibb.co/wFD7JTdb/D3-D095-EF-D0-D5-47-A1-B382-BBA57-A1-DE014.jpg" 
-                alt="Mo Profile" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute inset-0 border-2 border-pink-pastel rounded-full animate-pulse pointer-events-none"></div>
+          <div className="profile-container relative w-32 h-32 mb-4 overflow-visible transform hover:scale-105 transition-all duration-300">
+            <img 
+              src="https://i.ibb.co/wFD7JTdb/D3-D095-EF-D0-D5-47-A1-B382-BBA57-A1-DE014.jpg" 
+              alt="Mo Profile" 
+              className="w-32 h-32 rounded-full object-cover z-10 relative"
+            />
+            <div className="profile-glow-effect"></div>
           </div>
           
           <h3 className="text-2xl font-semibold mb-2">Mo🍉</h3>

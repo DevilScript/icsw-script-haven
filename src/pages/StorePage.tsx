@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
@@ -292,6 +291,13 @@ const StorePage = () => {
     }
   };
 
+  // Helper function to determine stock color
+  const getStockColorClass = (count: number) => {
+    if (count <= 0) return "text-red-300";
+    if (count < 10) return "text-pink-pastel";
+    return "text-green-300";
+  };
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
@@ -343,7 +349,7 @@ const StorePage = () => {
                 <div className="mb-6">
                   <p className="text-gray-400 text-sm mb-2">Features</p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedMapData.function.map((func, index) => (
+                    {selectedMapData.function && selectedMapData.function.map((func, index) => (
                       <span 
                         key={index}
                         className="px-3 py-1.5 bg-black/40 text-xs rounded-full border border-pink-pastel/30"
@@ -358,11 +364,7 @@ const StorePage = () => {
                   <div className="text-sm flex items-center gap-2">
                     <PackageOpen size={16} />
                     <span>In Stock: </span> 
-                    <span className={
-                      keyCount <= 0 ? "text-red-300" :
-                      keyCount < 10 ? "text-pink-pastel" :
-                      "text-green-300"
-                    }>
+                    <span className={getStockColorClass(keyCount)}>
                       {keyCount} keys
                     </span>
                   </div>
@@ -370,7 +372,7 @@ const StorePage = () => {
                   {user ? (
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-sm">
-                        Your Balance: <span className={user.balance >= selectedMapData.price ? "text-green-400" : "text-red-400"}>
+                        Your Balance: <span className={user.balance >= (selectedMapData.price || 0) ? "text-green-400" : "text-red-400"}>
                           {user.balance} Credits
                         </span>
                       </div>
@@ -380,11 +382,11 @@ const StorePage = () => {
                         disabled={
                           isBuying || 
                           !user || 
-                          user.balance < selectedMapData.price || 
+                          user.balance < (selectedMapData.price || 0) || 
                           keyCount <= 0
                         }
                         className={`button-3d shine-effect ${
-                          (!user || user.balance < selectedMapData.price || keyCount <= 0) ? 
+                          (!user || user.balance < (selectedMapData.price || 0) || keyCount <= 0) ? 
                           'disabled-element' : ''
                         }`}
                       >

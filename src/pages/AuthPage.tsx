@@ -22,18 +22,34 @@ const AuthPage = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
+    // Check for auth error in URL
+    const url = new URL(window.location.href);
+    const errorDescription = url.searchParams.get('error_description');
+    
+    if (errorDescription) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: errorDescription.replace(/\+/g, ' '),
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     // If user is already logged in, redirect to home
     if (user) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, toast]);
   
   const handleDiscordLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          redirectTo: 'https://ifmrpxcnhebocyvcbcpn.supabase.co/auth/v1/callback'
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true
         }
       });
       
@@ -44,6 +60,57 @@ const AuthPage = () => {
           title: "Login Failed",
           description: error.message,
         });
+        return;
+      }
+      
+      // Get the URL from the response
+      const { data } = await supabase.auth.getSession();
+      
+      if (data?.session) {
+        // If we already have a session, redirect to home
+        navigate("/");
+      } else {
+        // Open a popup window for Discord auth
+        const width = 600;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        
+        const popup = window.open(
+          'about:blank',
+          'discord-login',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+        
+        if (popup) {
+          const { data } = await supabase.auth.signInWithOAuth({
+            provider: 'discord',
+            options: { 
+              redirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+          
+          if (data?.url) {
+            popup.location.href = data.url;
+            
+            // Check if popup is closed
+            const checkPopupClosed = setInterval(() => {
+              if (popup.closed) {
+                clearInterval(checkPopupClosed);
+                // Check for session after popup is closed
+                checkUserSession();
+              }
+            }, 500);
+          } else {
+            popup.close();
+          }
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Popup Blocked",
+            description: "Please allow popups and try again",
+          });
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -52,6 +119,16 @@ const AuthPage = () => {
         title: "Login Failed",
         description: "An unexpected error occurred.",
       });
+    }
+  };
+  
+  // Check if user is logged in after popup is closed
+  const checkUserSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    
+    if (data?.session) {
+      // User is logged in
+      navigate('/');
     }
   };
   
@@ -71,8 +148,8 @@ const AuthPage = () => {
           </p>
           
           <Button
-            className="button-3d px-6 py-6 text-lg rounded-md shine-effect w-full"
-            onClick={() => setIsDialogOpen(true)}
+            className="discord-button-3d px-6 py-6 text-lg rounded-md shine-effect w-full"
+            onClick={handleDiscordLogin}
           >
             Login with Discord
           </Button>
@@ -110,7 +187,7 @@ const AuthPage = () => {
             
             <Button 
               onClick={handleDiscordLogin} 
-              className="button-3d shine-effect w-full bg-[#5865F2] hover:bg-[#4752c4]"
+              className="discord-button-3d w-full bg-[#5865F2] hover:bg-[#4752c4]"
             >
               Authorize with Discord
             </Button>
