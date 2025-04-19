@@ -81,10 +81,15 @@ export default function AuthCallback() {
               // Delay closing to ensure postMessage is sent
               setTimeout(() => {
                 window.close();
-              }, 500);
+                // Fallback: Try closing again after a short delay
+                setTimeout(() => {
+                  if (!window.closed) window.close();
+                }, 500);
+              }, 300);
             } catch (err) {
               console.error("Error communicating with opener window:", err);
-              navigate("/");
+              // Do not navigate in popup, just attempt to close again
+              setTimeout(() => window.close(), 300);
             }
           } else {
             navigate("/");

@@ -92,7 +92,7 @@ const AuthPage = () => {
       if (data?.url) {
         popup.location.href = data.url;
 
-        // ฟังก์ชันตรวจสอบ session
+        // ฟังก์ชันตรวจสอบ session และปิด popup
         const checkAuthComplete = async () => {
           try {
             const { data: sessionData, error: sessionError } =
@@ -103,7 +103,7 @@ const AuthPage = () => {
             }
 
             if (sessionData?.session) {
-              popup.close();
+              if (!popup.closed) popup.close();
               setIsLoading(false);
               toast({
                 title: "Login Successful",
@@ -119,7 +119,7 @@ const AuthPage = () => {
           }
         };
 
-        // Timeout เพื่อป้องกัน loop นานเกินไป
+        // Timeout เพื่อ cleanup ถ้า popup ไม่ปิด
         const timeout = setTimeout(() => {
           clearInterval(checkPopupClosed);
           if (!popup.closed) popup.close();
@@ -129,7 +129,7 @@ const AuthPage = () => {
             title: "Authentication Timeout",
             description: "The authentication process took too long.",
           });
-        }, 30000); // 30 วินาที
+        }, 15000); // ลดเหลือ 15 วินาทีเพื่อความรวดเร็ว
 
         // ตรวจสอบ popup และ session
         const checkPopupClosed = setInterval(async () => {
@@ -148,19 +148,11 @@ const AuthPage = () => {
             return;
           }
 
-          try {
-            const currentUrl = popup.location.href;
-            if (currentUrl.includes("/auth/callback")) {
-              // รอให้ callback ทำงาน
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-              const authComplete = await checkAuthComplete();
-              if (authComplete) {
-                clearInterval(checkPopupClosed);
-                clearTimeout(timeout);
-              }
-            }
-          } catch (e) {
-            // ยังอยู่ใน Discord domain
+          // พยายามตรวจสอบ session โดยไม่ต้องเช็ค URL เพื่อลด cross-origin error
+          const authComplete = await checkAuthComplete();
+          if (authComplete) {
+            clearInterval(checkPopupClosed);
+            clearTimeout(timeout);
           }
         }, 500);
 
@@ -174,7 +166,10 @@ const AuthPage = () => {
             ) {
               clearInterval(checkPopupClosed);
               clearTimeout(timeout);
-              await checkAuthComplete();
+              const authComplete = await checkAuthComplete();
+              if (!authComplete && !popup.closed) {
+                popup.close();
+              }
             }
           },
           { once: true }
