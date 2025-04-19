@@ -2,7 +2,6 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,14 +24,12 @@ const TopupPage = () => {
 
   const handleVoucherLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVoucherLink(e.target.value);
-    // Clear previous messages
     setErrorMessage("");
     setSuccessMessage("");
   };
 
   const extractVoucherCode = (link: string) => {
     try {
-      // Extract the voucher code from the TrueMoney link
       const url = new URL(link);
       const params = new URLSearchParams(url.search);
       const voucherCode = params.get("v");
@@ -69,21 +66,6 @@ const TopupPage = () => {
     try {
       const voucherCode = extractVoucherCode(voucherLink);
 
-      // Get user's phone number from user_id table
-      const { data: userData, error: userError } = await supabase
-        .from("user_id")
-        .select("phone")
-        .eq("username", user.username)
-        .single();
-
-      if (userError || !userData?.phone) {
-        throw new Error(
-          "Phone number not found. Please update your profile with a valid phone number."
-        );
-      }
-
-      const phoneNumber = userData.phone;
-
       // Call Supabase Edge Function for TrueMoney redemption
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/truemoney-redeem`,
@@ -96,7 +78,6 @@ const TopupPage = () => {
           body: JSON.stringify({
             voucher_code: voucherCode,
             user_id: user.id,
-            phone: phoneNumber,
           }),
         }
       );
