@@ -125,7 +125,7 @@ const TopupPage = () => {
         title: "Topup Failed",
         description:
           error instanceof Error ? error.message : "An error occurred during topup",
-      );
+      });
     } finally {
       setIsProcessing(false);
     }
