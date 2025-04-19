@@ -1,10 +1,9 @@
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useToast } from '../hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { useToast } from "../hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -15,20 +14,20 @@ export default function AuthCallback() {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
+          console.error("Error getting session:", error);
           toast({
-            title: 'Error',
-            description: 'Unable to get session data, please try again',
-            variant: 'destructive',
+            title: "Error",
+            description: "Unable to get session data, please try again",
+            variant: "destructive",
           });
-          navigate('/auth');
+          navigate("/auth");
           return;
         }
 
         if (data.session) {
           const user = data.session.user;
           const userMetadata = user?.user_metadata || {};
-          
+
           // Try to get the best display name
           const discordGlobalName =
             userMetadata.full_name ||
@@ -36,14 +35,17 @@ export default function AuthCallback() {
             userMetadata.global_name ||
             userMetadata.name ||
             userMetadata.username ||
-            'User';
-            
+            "User";
+
           const username = user.email || user.id;
-          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2));
+          console.log(
+            "Full user_metadata:",
+            JSON.stringify(userMetadata, null, 2)
+          );
 
           // Update or insert user data in user_id table
           const { error: upsertError } = await supabase
-            .from('user_id')
+            .from("user_id")
             .upsert(
               {
                 id: user.id,
@@ -52,54 +54,57 @@ export default function AuthCallback() {
                 created_at: new Date().toISOString(),
               },
               {
-                onConflict: 'id',
+                onConflict: "id",
               }
             );
 
           if (upsertError) {
-            console.error('Error upserting user_id:', upsertError);
+            console.error("Error upserting user_id:", upsertError);
             toast({
-              title: 'Error',
-              description: 'Could not update user data, please contact support',
-              variant: 'destructive',
+              title: "Error",
+              description: "Could not update user data, please contact support",
+              variant: "destructive",
             });
-            navigate('/auth');
+            navigate("/auth");
             return;
           }
 
           toast({
-            title: 'Success',
+            title: "Success",
             description: `Welcome, ${discordGlobalName}!`,
           });
-          
-          // If in a popup, close it automatically
+
           if (window.opener) {
             try {
-              // Notify the opener window about successful login if needed
-              window.opener.postMessage('auth-successful', window.location.origin);
-              window.close();
+              // Notify the opener window about successful login
+              window.opener.postMessage("auth-successful", window.location.origin);
+              // Delay closing to ensure postMessage is sent
+              setTimeout(() => {
+                window.close();
+              }, 500);
             } catch (err) {
-              console.error('Error communicating with opener window:', err);
+              console.error("Error communicating with opener window:", err);
+              navigate("/");
             }
           } else {
-            navigate('/');
+            navigate("/");
           }
         } else {
           toast({
-            title: 'Error',
-            description: 'No session found, please try again',
-            variant: 'destructive',
+            title: "Error",
+            description: "No session found, please try again",
+            variant: "destructive",
           });
-          navigate('/auth');
+          navigate("/auth");
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error("Unexpected error:", err);
         toast({
-          title: 'Error',
-          description: 'An unexpected error occurred',
-          variant: 'destructive',
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
         });
-        navigate('/auth');
+        navigate("/auth");
       }
     }
 
@@ -110,7 +115,9 @@ export default function AuthCallback() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-4">Processing Login</h1>
-        <p className="text-gray-400 mb-6">Please wait while we verify your details...</p>
+        <p className="text-gray-400 mb-6">
+          Please wait while we verify your details...
+        </p>
         <Button disabled className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading...
