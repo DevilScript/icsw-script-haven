@@ -16,12 +16,14 @@ import HistoryPage from "./pages/HistoryPage";
 import ResetHWIDPage from "./pages/ResetHWIDPage";
 import AuthCallback from "./pages/AuthCallback";
 
+// Create a persistent query client with improved cache settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 60 * 1000, // Consider data fresh for 1 minute
+      gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
     },
   },
 });
@@ -35,8 +37,13 @@ const RouteGuard = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      await loadUser();
-      setIsLoaded(true);
+      try {
+        await loadUser();
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setIsLoaded(true);
+      }
     };
 
     initializeAuth();

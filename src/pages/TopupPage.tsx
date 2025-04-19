@@ -84,11 +84,14 @@ const TopupPage = () => {
         })
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.message || "Failed to redeem voucher");
+        const errorText = await response.text();
+        console.error("Topup API error:", errorText);
+        throw new Error("Failed to redeem voucher. Please check if the voucher is valid and not already used.");
       }
+      
+      const data = await response.json();
+      console.log("TrueMoney API response:", data);
       
       // Extract amount from response
       const amount = data.amount || data.data?.amount || 0;
@@ -104,7 +107,7 @@ const TopupPage = () => {
       const { error: balanceError } = await supabase
         .from("user_id")
         .update({ balance: newBalance })
-        .eq("id", user.id);
+        .eq("username", user.username);
         
       if (balanceError) throw balanceError;
       
@@ -177,7 +180,7 @@ const TopupPage = () => {
                 <Button
                   onClick={handleTopup}
                   disabled={isProcessing || !voucherLink.trim() || !user}
-                  className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-pink-DEFAULT/20"
+                  className="bg-gray-800 hover:bg-gray-700 text-white shadow-lg hover:scale-105 transition-all duration-200"
                 >
                   {isProcessing ? (
                     <>

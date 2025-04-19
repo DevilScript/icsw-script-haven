@@ -92,16 +92,51 @@ const AuthPage = () => {
       if (data?.url) {
         popup.location.href = data.url;
         
-        // Check if popup is closed
+        // Check if popup is closed or redirected back
         const checkPopupClosed = setInterval(async () => {
-          if (popup.closed) {
-            clearInterval(checkPopupClosed);
-            setIsLoading(false);
-            // Check for session after popup is closed
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData?.session) {
-              navigate('/');
+          try {
+            // Check if popup is still open
+            if (popup.closed) {
+              clearInterval(checkPopupClosed);
+              setIsLoading(false);
+              
+              // Check for session after popup is closed
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                toast({
+                  title: "Login Successful",
+                  description: "You have been logged in successfully",
+                });
+                navigate('/');
+              }
+              return;
             }
+            
+            // Try to access popup location to see if it's completed auth
+            // This will throw an error if popup is on a different domain
+            const currentUrl = popup.location.href;
+            
+            // Check if the URL contains our callback
+            if (currentUrl.includes('/auth/callback')) {
+              clearInterval(checkPopupClosed);
+              setIsLoading(false);
+              
+              // Close the popup
+              setTimeout(() => popup.close(), 500);
+              
+              // Check for session
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                toast({
+                  title: "Login Successful",
+                  description: "You have been logged in successfully",
+                });
+                navigate('/');
+              }
+            }
+          } catch (e) {
+            // Error accessing popup location - still on Discord domain
+            console.log("Waiting for auth to complete...");
           }
         }, 500);
       } else {

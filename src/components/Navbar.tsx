@@ -148,7 +148,7 @@ const Navbar = () => {
   ];
 
   const navbarClasses = `fixed w-full z-50 transition-all duration-300 ${
-    isAtTop ? "py-4 bg-transparent" : "py-2 bg-black/70 backdrop-blur-lg shadow-lg"
+    isAtTop ? "py-4 bg-transparent" : "py-2 bg-black/80 backdrop-blur-lg shadow-lg"
   } ${
     showNavbar ? "translate-y-0" : "-translate-y-full"
   }`;
@@ -183,6 +183,36 @@ const Navbar = () => {
                   {item.name}
                 </NavLink>
               ))}
+              
+              {/* Add History and Reset-HWID to nav items when logged in */}
+              {nickname && (
+                <>
+                  <NavLink
+                    to="/history"
+                    className={({ isActive }) =>
+                      `py-1 relative shine-effect ${
+                        isActive
+                          ? "text-[rgb(255,179,209)]"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    History
+                  </NavLink>
+                  <NavLink
+                    to="/reset-hwid"
+                    className={({ isActive }) =>
+                      `py-1 relative shine-effect ${
+                        isActive
+                          ? "text-[rgb(255,179,209)]"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    Reset HWID
+                  </NavLink>
+                </>
+              )}
             </div>
           </div>
 
@@ -206,50 +236,28 @@ const Navbar = () => {
                   </div>
                 </div>
 
-                {/* User dropdown with modern styling */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                {/* User display - styled similarly to THB display */}
+                <div className="bg-gradient-to-r from-gray-700/30 to-gray-900/30 p-0.5 rounded-full backdrop-blur-sm">
+                  <div className="bg-black/40 px-3 py-1 rounded-full flex items-center group hover:bg-black/60 transition-all duration-300">
+                    <div className="h-5 w-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden mr-1">
+                      {nickname.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-gray-200 font-medium">{nickname}</span>
                     <Button
                       variant="ghost"
-                      className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 text-white flex items-center gap-2 border border-pink-DEFAULT/20 hover:border-pink-DEFAULT/40 transition-all duration-300 p-2 rounded-lg hover:shadow-lg hover:shadow-pink-DEFAULT/10 hover:scale-105"
-                    >
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
-                        {nickname.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex flex-col items-start">
-                        <span className="text-sm font-medium">{nickname}</span>
-                        <span className="text-xs text-gray-400">User Account</span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 opacity-70 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#222222] backdrop-blur-lg text-white border-pink-DEFAULT/20 shadow-xl shadow-pink-DEFAULT/10 animate-fade-in rounded-lg overflow-hidden w-48 p-1">
-                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors">
-                      <NavLink to="/history" className="flex items-center gap-2 w-full">
-                        <History className="h-4 w-4 text-pink-DEFAULT" />
-                        <span>History</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors">
-                      <NavLink to="/reset-hwid" className="flex items-center gap-2 w-full">
-                        <Key className="h-4 w-4 text-pink-DEFAULT" />
-                        <span>Reset-HWID</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+                      size="sm"
+                      className="ml-1 p-0 h-auto hover:bg-transparent"
                       onClick={handleLogout}
-                      className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors mt-1 border-t border-gray-700 pt-1"
                     >
-                      <LogIn className="h-4 w-4 text-pink-DEFAULT mr-2 rotate-180" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <LogIn className="h-3 w-3 text-gray-400 hover:text-white rotate-180" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
               <Button 
                 asChild
-                className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 border-none shadow-lg hover:shadow-pink-DEFAULT/20 transition-all duration-300 hover:scale-105"
+                className="bg-gray-800 hover:bg-gray-700 text-white border-none shadow-lg hover:scale-105 transition-all duration-300"
                 size="sm"
               >
                 <NavLink to="/auth">
@@ -275,7 +283,7 @@ const Navbar = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden py-4 animate-fade-in mobile-nav bg-[#1a1a1f]/90 backdrop-blur-md shadow-lg rounded-b-lg">
+          <div className="md:hidden py-4 animate-fade-in mobile-nav bg-gray-900/95 backdrop-blur-md shadow-lg rounded-b-lg">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
                 <NavLink
@@ -294,6 +302,40 @@ const Navbar = () => {
                 </NavLink>
               ))}
               
+              {/* Add History and Reset-HWID to mobile nav when logged in */}
+              {nickname && (
+                <>
+                  <NavLink
+                    to="/history"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md ${
+                        isActive
+                          ? "bg-pink-transparent text-pink-DEFAULT"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <History className="h-4 w-4 mr-2 inline" />
+                    History
+                  </NavLink>
+                  <NavLink
+                    to="/reset-hwid"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md ${
+                        isActive
+                          ? "bg-pink-transparent text-pink-DEFAULT"
+                          : "text-gray-300 hover:text-white"
+                      }`
+                    }
+                  >
+                    <Key className="h-4 w-4 mr-2 inline" />
+                    Reset HWID
+                  </NavLink>
+                </>
+              )}
+              
               {nickname ? (
                 <>
                   <div className="flex items-center justify-between mx-4 px-4 py-2">
@@ -306,42 +348,14 @@ const Navbar = () => {
                     </div>
                     
                     {/* User display for mobile */}
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 px-3 py-1 rounded-full border border-pink-DEFAULT/20">
-                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white font-medium text-sm">
+                    <div className="flex items-center gap-2 bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700/50">
+                      <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-sm">
                         {nickname.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium text-sm">{nickname}</span>
+                      <span className="font-medium text-sm text-gray-200">{nickname}</span>
                     </div>
                   </div>
                   
-                  <NavLink
-                    to="/history"
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      `px-4 py-2 rounded-md flex items-center ${
-                        isActive
-                          ? "bg-pink-transparent text-pink-DEFAULT"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    <History className="h-4 w-4 mr-2 text-pink-DEFAULT" />
-                    History
-                  </NavLink>
-                  <NavLink
-                    to="/reset-hwid"
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      `px-4 py-2 rounded-md flex items-center ${
-                        isActive
-                          ? "bg-pink-transparent text-pink-DEFAULT"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    <Key className="h-4 w-4 mr-2 text-pink-DEFAULT" />
-                    Reset-HWID
-                  </NavLink>
                   <Button
                     variant="ghost"
                     onClick={handleLogout}
@@ -354,7 +368,7 @@ const Navbar = () => {
               ) : (
                 <Button 
                   asChild
-                  className="mx-4 bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 border-none"
+                  className="mx-4 bg-gray-800 hover:bg-gray-700 text-white hover:scale-105 transition-all duration-200"
                   size="sm"
                 >
                   <NavLink to="/auth" onClick={() => setIsOpen(false)}>
@@ -423,7 +437,7 @@ const Navbar = () => {
           <DialogFooter>
             <Button 
               onClick={handleHelpSubmit}
-              className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105"
+              className="bg-gray-800 hover:bg-gray-700 text-white hover:scale-105 transition-all duration-200"
             >
               Send Message
             </Button>

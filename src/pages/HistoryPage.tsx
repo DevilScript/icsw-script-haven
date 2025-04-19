@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
 import { useAuthStore } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Loader2, 
   Clock, 
@@ -15,7 +16,6 @@ import {
   Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface HistoryItem {
   id: number;
@@ -26,78 +26,64 @@ interface HistoryItem {
   amount?: number;
   success: boolean;
   username: string;
+  type: 'buy' | 'balance';
 }
 
 const HistoryPage = () => {
-  const { user, loadUser } = useAuthStore();
+  const { user } = useAuthStore();
   const { toast } = useToast();
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   
-  useEffect(() => {
-    loadUser();
-    if (user) {
-      fetchHistory();
-    }
-  }, [user]);
-  
-  const fetchHistory = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    
-    try {
-      // Fetch all history types in one query
-      const [buyResponse, accessResponse, balanceResponse] = await Promise.all([
-        // Purchase history
-        supabase
-          .from("buy_log")
-          .select("*")
-          .eq("username", user.username)
-          .order("timestamp", { ascending: false }),
-          
-        // Script access history
-        supabase
-          .from("active_log")
-          .select("*")
-          .eq("username", user.username)
-          .order("timestamp", { ascending: false }),
-          
-        // Balance topup history
-        supabase
-          .from("balance_log")
-          .select("*")
-          .eq("username", user.username)
-          .order("timestamp", { ascending: false })
-      ]);
+  // Use React Query for data fetching with caching
+  const { data: historyItems, isLoading } = useQuery({
+    queryKey: ['history', user?.username],
+    queryFn: async () => {
+      if (!user?.username) return [];
       
-      const buyData = buyResponse.data || [];
-      const accessData = accessResponse.data || [];
-      const balanceData = balanceResponse.data || [];
-      
-      // Combine all histories and sort by timestamp
-      const combinedHistory = [
-        ...buyData.map((item: any) => ({ ...item, type: 'buy' })),
-        ...accessData.map((item: any) => ({ ...item, type: 'access' })),
-        ...balanceData.map((item: any) => ({ ...item, type: 'balance' }))
-      ].sort((a, b) => {
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      });
-      
-      setHistory(combinedHistory);
-    } catch (error) {
-      console.error("Error fetching history:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load your history"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      try {
+        // Only fetch purchase and balance history
+        const [buyResponse, balanceResponse] = await Promise.all([
+          // Purchase history
+          supabase
+            .from("buy_log")
+            .select("*")
+            .eq("username", user.username)
+            .order("timestamp", { ascending: false }),
+            
+          // Balance topup history
+          supabase
+            .from("balance_log")
+            .select("*")
+            .eq("username", user.username)
+            .order("timestamp", { ascending: false })
+        ]);
+        
+        const buyData = buyResponse.data || [];
+        const balanceData = balanceResponse.data || [];
+        
+        // Combine and sort history items
+        const combinedHistory = [
+          ...buyData.map((item: any) => ({ ...item, type: 'buy' })),
+          ...balanceData.map((item: any) => ({ ...item, type: 'balance' }))
+        ].sort((a, b) => {
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
+        
+        return combinedHistory;
+      } catch (error) {
+        console.error("Error fetching history:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load your history"
+        });
+        return [];
+      }
+    },
+    enabled: !!user?.username,
+    staleTime: 60000, // Consider data fresh for 1 minute
+    refetchOnWindowFocus: false // Don't refetch on window focus
+  });
   
   const handleCopyKey = (key: string) => {
     navigator.clipboard.writeText(key);
@@ -128,8 +114,6 @@ const HistoryPage = () => {
     switch (type) {
       case 'buy': 
         return <ShoppingCart className="h-5 w-5 text-pink-DEFAULT" />;
-      case 'access': 
-        return <Clock className="h-5 w-5 text-blue-400" />;
       case 'balance': 
         return <Wallet className="h-5 w-5 text-green-400" />;
       default: 
@@ -141,10 +125,8 @@ const HistoryPage = () => {
     switch (item.type) {
       case 'buy': 
         return `Purchased ${item.map}`;
-      case 'access': 
-        return `Used script for ${item.map}`;
       case 'balance': 
-        return `Topup ${item.amount} THB`;
+        return `Added ${item.amount} THB`;
       default: 
         return "History Event";
     }
@@ -158,7 +140,7 @@ const HistoryPage = () => {
             <p className="text-xl text-gray-300">Please log in to view your history</p>
             <Button
               onClick={() => window.location.href = "/auth"}
-              className="mt-6 button-3d shine-effect"
+              className="mt-6 bg-gray-800 hover:bg-gray-700 text-white hover:scale-105 transition-all duration-200"
             >
               Go to Login
             </Button>
@@ -184,9 +166,9 @@ const HistoryPage = () => {
                 <p className="text-gray-400 mt-4">Loading your history...</p>
               </div>
             </div>
-          ) : history.length > 0 ? (
+          ) : historyItems && historyItems.length > 0 ? (
             <div className="space-y-4">
-              {history.map((item: any) => (
+              {historyItems.map((item: any) => (
                 <div 
                   key={`${item.type}-${item.id}`} 
                   className="history-item bg-black/20 p-4 rounded-lg border border-gray-800 hover:border-gray-700 transition-all"
@@ -224,8 +206,8 @@ const HistoryPage = () => {
                       </div>
                     </div>
                     
-                    {/* Key display for buy and access types */}
-                    {(item.type === 'buy' || item.type === 'access') && item.key && (
+                    {/* Key display for buy types */}
+                    {item.type === 'buy' && item.key && (
                       <div className="flex items-center">
                         <div className="text-xs bg-black/50 px-2 py-1 rounded mr-2 font-mono text-gray-300">
                           {item.key}
@@ -254,7 +236,7 @@ const HistoryPage = () => {
                 <HistoryIcon className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-xl font-medium text-gray-300">No history found</h3>
-              <p className="text-gray-400 mt-2">Your activity history will appear here</p>
+              <p className="text-gray-400 mt-2">Your purchase and topup history will appear here</p>
             </div>
           )}
         </GlassCard>
