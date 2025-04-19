@@ -33,21 +33,13 @@ const TopupPage = () => {
       // Check if the input is a valid URL
       const url = new URL(link);
 
-      // Validate hostname and pathname
-      if (url.hostname !== "gift.truemoney.com") {
-        throw new Error("Invalid domain. Use gift.truemoney.com");
-      }
-      if (!url.pathname.startsWith("/campaign")) {
-        throw new Error("Invalid path. Use /campaign");
-      }
-
       // Extract voucher code from query parameter
       const params = new URLSearchParams(url.search);
       const voucherCode = params.get("v");
 
-      // Validate voucher code format
-      if (!voucherCode || !/^[a-zA-Z0-9]{18}$/.test(voucherCode)) {
-        throw new Error("Invalid voucher code format. It should be 18 alphanumeric characters.");
+      // Validate voucher code existence
+      if (!voucherCode) {
+        throw new Error("Missing voucher code in link. Use format: https://gift.truemoney.com/campaign/?v=xxxxxxxxxx");
       }
 
       return voucherCode;
