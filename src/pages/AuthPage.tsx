@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
@@ -71,6 +72,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
+          skipBrowserRedirect: true, // This is the key change to prevent main page redirection
           redirectTo: import.meta.env.VITE_SUPABASE_SITE_URL || 'http://localhost:5173/auth/callback',
           scopes: 'identify email',
         },
@@ -137,7 +139,7 @@ const AuthPage = () => {
           </p>
           
           <Button
-            className="discord-button-3d px-6 py-6 text-lg rounded-md shine-effect w-full"
+            className="discord-button-3d px-6 py-6 text-lg rounded-md shine-effect w-full hover:scale-105 transition-transform duration-200"
             onClick={handleDiscordLogin}
             disabled={isLoading}
           >
@@ -177,7 +179,7 @@ const AuthPage = () => {
             
             <Button 
               onClick={handleDiscordLogin} 
-              className="discord-button-3d w-full bg-[#5865F2] hover:bg-[#4752c4]"
+              className="discord-button-3d w-full bg-[#5865F2] hover:bg-[#4752c4] hover:scale-105 transition-transform duration-200"
               disabled={isLoading}
             >
               {isLoading ? "Loading..." : "Authorize with Discord"}

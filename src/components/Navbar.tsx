@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { HelpCircle, Menu, X, LogIn, History, Key, User, ChevronDown, Wallet } from "lucide-react";
+import { HelpCircle, Menu, X, LogIn, History, Key, ChevronDown, Wallet, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,7 +32,7 @@ const Navbar = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
-  const [discordTag, setDiscordTag] = useState("");
+  const [discordTag, setDiscordTag] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
   const { user, logout } = useAuthStore();
@@ -200,8 +200,8 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 {/* Balance display with animation */}
                 <div className="bg-gradient-to-r from-pink-DEFAULT/20 to-purple-600/20 p-0.5 rounded-full backdrop-blur-sm animate-pulse">
-                  <div className="bg-black/40 px-3 py-1 rounded-full flex items-center">
-                    <Wallet className="h-4 w-4 text-pink-DEFAULT mr-1" />
+                  <div className="bg-black/40 px-3 py-1 rounded-full flex items-center group hover:bg-black/60 transition-all duration-300">
+                    <Wallet className="h-4 w-4 text-pink-DEFAULT mr-1 group-hover:scale-110 transition-transform" />
                     <span className="text-pink-DEFAULT font-medium">{balance} THB</span>
                   </div>
                 </div>
@@ -211,33 +211,37 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="button-3d shine-effect bg-gradient-to-r from-[#222222] to-[#333333] hover:from-[#2a2a2a] hover:to-[#3a3a3a] text-white flex items-center gap-2 shadow-lg border border-pink-DEFAULT/10 transition-all duration-300 hover:shadow-pink-DEFAULT/20"
+                      className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 text-white flex items-center gap-2 border border-pink-DEFAULT/20 hover:border-pink-DEFAULT/40 transition-all duration-300 p-2 rounded-lg hover:shadow-lg hover:shadow-pink-DEFAULT/10 hover:scale-105"
                     >
-                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white font-medium">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
                         {nickname.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{nickname}</span>
-                      <ChevronDown className="h-4 w-4 opacity-70" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-sm font-medium">{nickname}</span>
+                        <span className="text-xs text-gray-400">User Account</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-70 ml-1" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#222222]/95 backdrop-blur-lg text-white border-pink-DEFAULT/20 shadow-xl shadow-pink-DEFAULT/5 animate-fade-in">
-                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10">
-                      <NavLink to="/history" className="flex items-center">
-                        <History className="h-4 w-4 mr-2 inline text-pink-DEFAULT" />
-                        History
+                  <DropdownMenuContent className="bg-[#222222] backdrop-blur-lg text-white border-pink-DEFAULT/20 shadow-xl shadow-pink-DEFAULT/10 animate-fade-in rounded-lg overflow-hidden w-48 p-1">
+                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors">
+                      <NavLink to="/history" className="flex items-center gap-2 w-full">
+                        <History className="h-4 w-4 text-pink-DEFAULT" />
+                        <span>History</span>
                       </NavLink>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10">
-                      <NavLink to="/reset-hwid" className="flex items-center">
-                        <Key className="h-4 w-4 mr-2 inline text-pink-DEFAULT" />
-                        Reset-HWID
+                    <DropdownMenuItem asChild className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors">
+                      <NavLink to="/reset-hwid" className="flex items-center gap-2 w-full">
+                        <Key className="h-4 w-4 text-pink-DEFAULT" />
+                        <span>Reset-HWID</span>
                       </NavLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="hover:bg-pink-transparent/10"
+                      className="hover:bg-pink-transparent/10 rounded-md px-3 py-2 transition-colors mt-1 border-t border-gray-700 pt-1"
                     >
-                      Logout
+                      <LogIn className="h-4 w-4 text-pink-DEFAULT mr-2 rotate-180" />
+                      <span>Logout</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -245,7 +249,7 @@ const Navbar = () => {
             ) : (
               <Button 
                 asChild
-                className="button-3d shine-effect bg-gradient-to-r from-[#222222] to-[#333333] hover:from-[#2a2a2a] hover:to-[#3a3a3a] border border-pink-DEFAULT/10 shadow-lg"
+                className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 border-none shadow-lg hover:shadow-pink-DEFAULT/20 transition-all duration-300 hover:scale-105"
                 size="sm"
               >
                 <NavLink to="/auth">
@@ -271,7 +275,7 @@ const Navbar = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden py-4 animate-fade-in mobile-nav bg-[#1a1a1f]/95 backdrop-blur-md shadow-lg rounded-b-lg">
+          <div className="md:hidden py-4 animate-fade-in mobile-nav bg-[#1a1a1f]/90 backdrop-blur-md shadow-lg rounded-b-lg">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
                 <NavLink
@@ -302,11 +306,11 @@ const Navbar = () => {
                     </div>
                     
                     {/* User display for mobile */}
-                    <div className="flex items-center gap-2 bg-[#222222] px-3 py-1 rounded-full border border-pink-DEFAULT/20">
-                      <div className="h-5 w-5 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 px-3 py-1 rounded-full border border-pink-DEFAULT/20">
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-pink-DEFAULT to-purple-600 flex items-center justify-center text-white font-medium text-sm">
                         {nickname.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{nickname}</span>
+                      <span className="font-medium text-sm">{nickname}</span>
                     </div>
                   </div>
                   
@@ -343,13 +347,14 @@ const Navbar = () => {
                     onClick={handleLogout}
                     className="text-gray-300 hover:text-white justify-start px-4"
                   >
+                    <LogIn className="h-4 w-4 mr-2 rotate-180" />
                     Logout
                   </Button>
                 </>
               ) : (
                 <Button 
                   asChild
-                  className="mx-4 button-3d shine-effect bg-gradient-to-r from-[#222222] to-[#333333] hover:from-[#2a2a2a] hover:to-[#3a3a3a] border border-pink-DEFAULT/10"
+                  className="mx-4 bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 border-none"
                   size="sm"
                 >
                   <NavLink to="/auth" onClick={() => setIsOpen(false)}>
@@ -397,7 +402,7 @@ const Navbar = () => {
                   id="discordTag"
                   placeholder="username#1234"
                   className="col-span-3 key-input"
-                  value={discordTag}
+                  value={discordTag || ""}
                   onChange={(e) => setDiscordTag(e.target.value)}
                 />
               </div>
@@ -418,7 +423,7 @@ const Navbar = () => {
           <DialogFooter>
             <Button 
               onClick={handleHelpSubmit}
-              className="button-3d shine-effect w-full sm:w-auto"
+              className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105"
             >
               Send Message
             </Button>

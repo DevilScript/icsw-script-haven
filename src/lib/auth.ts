@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { supabase } from './supabase';
 
@@ -18,9 +17,10 @@ interface AuthState {
   login: (username: string) => Promise<boolean>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  updateUserData: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   session: null,
   isLoading: true,
@@ -122,8 +122,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
         
         if (userData) {
-          set({ user: userData as UserData });
-          set({ isLoading: false });
+          set({ user: userData as UserData, isLoading: false });
           return;
         }
       }
@@ -152,6 +151,44 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error('Load user error:', error);
       set({ isLoading: false });
+    }
+  },
+  
+  updateUserData: async () => {
+    const { user, session } = get();
+    if (!user) return;
+    
+    try {
+      let query;
+      
+      if (session) {
+        // If we have a session, use the id
+        query = supabase
+          .from('user_id')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+      } else {
+        // Otherwise use username (legacy)
+        query = supabase
+          .from('user_id')
+          .select('*')
+          .eq('username', user.username)
+          .single();
+      }
+      
+      const { data: userData, error: userError } = await query;
+      
+      if (userError) {
+        console.error('Error updating user data:', userError);
+        return;
+      }
+      
+      if (userData) {
+        set({ user: userData as UserData });
+      }
+    } catch (error) {
+      console.error('Update user data error:', error);
     }
   }
 }));

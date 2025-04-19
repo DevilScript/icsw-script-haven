@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const TopupPage = () => {
-  const { user, loadUser } = useAuthStore();
+  const { user, updateUserData } = useAuthStore();
   const { toast } = useToast();
   
   const [voucherLink, setVoucherLink] = useState("");
@@ -116,7 +116,7 @@ const TopupPage = () => {
       });
       
       // Refresh user data to update the displayed balance
-      await loadUser();
+      await updateUserData();
       
       // Show success message
       setSuccessMessage(`Successfully added ${amount} THB to your account!`);
@@ -144,7 +144,7 @@ const TopupPage = () => {
   
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto mt-10">
+      <div className="max-w-2xl mx-auto">
         <GlassCard className="p-6">
           <div className="flex items-center mb-6">
             <Wallet className="h-6 w-6 text-pink-DEFAULT mr-2" />
@@ -177,7 +177,7 @@ const TopupPage = () => {
                 <Button
                   onClick={handleTopup}
                   disabled={isProcessing || !voucherLink.trim() || !user}
-                  className="button-3d shine-effect bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600"
+                  className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-pink-DEFAULT/20"
                 >
                   {isProcessing ? (
                     <>
@@ -195,7 +195,7 @@ const TopupPage = () => {
             </div>
             
             {errorMessage && (
-              <div className="bg-red-900/20 border border-red-800/30 p-3 rounded flex items-start">
+              <div className="bg-red-900/20 border border-red-800/30 p-3 rounded flex items-start animate-fade-in">
                 <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
                 <p className="text-red-200 text-sm">{errorMessage}</p>
               </div>

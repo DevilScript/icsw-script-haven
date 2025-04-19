@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "./lib/auth";
 import Index from "./pages/Index";
@@ -16,24 +16,41 @@ import HistoryPage from "./pages/HistoryPage";
 import ResetHWIDPage from "./pages/ResetHWIDPage";
 import AuthCallback from "./pages/AuthCallback";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30 * 1000, // 30 seconds
+    },
+  },
+});
 
-const App = () => {
+// RouteGuard component to check authentication and fetch user data when needed
+const RouteGuard = ({ children }: { children: React.ReactNode }) => {
+  const { loadUser, user } = useAuthStore();
   const [isLoaded, setIsLoaded] = useState(false);
-  const { loadUser } = useAuthStore();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Load user data
     const initializeAuth = async () => {
       await loadUser();
-      // Simulate loading
-      setTimeout(() => {
-        setIsLoaded(true);
-      }, 1000);
+      setIsLoaded(true);
     };
-    
+
     initializeAuth();
   }, [loadUser]);
+
+  // Add event listener for route changes to update user data
+  useEffect(() => {
+    if (isLoaded && location.pathname !== '/auth' && location.pathname !== '/auth/callback') {
+      // Check if user data exists and trigger a refresh if needed
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ['storeItems'] });
+      }
+    }
+  }, [location.pathname, isLoaded, user]);
 
   if (!isLoaded) {
     return (
@@ -50,23 +67,29 @@ const App = () => {
     );
   }
 
+  return <>{children}</>;
+};
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/script" element={<ScriptPage />} />
-            <Route path="/store" element={<StorePage />} />
-            <Route path="/topup" element={<TopupPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/reset-hwid" element={<ResetHWIDPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <RouteGuard>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/script" element={<ScriptPage />} />
+              <Route path="/store" element={<StorePage />} />
+              <Route path="/topup" element={<TopupPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/reset-hwid" element={<ResetHWIDPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RouteGuard>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

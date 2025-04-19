@@ -20,6 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useQuery } from "@tanstack/react-query";
 
 interface StoreItem extends MapData {
   stock: number;
@@ -27,19 +28,14 @@ interface StoreItem extends MapData {
 }
 
 const StorePage = () => {
-  const { user } = useAuthStore();
+  const { user, updateUserData } = useAuthStore();
   const { toast } = useToast();
+  const [processingItems, setProcessingItems] = useState<{[key: number]: boolean}>({});
   
-  const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    fetchStoreItems();
-  }, []);
-  
-  const fetchStoreItems = async () => {
-    setIsLoading(true);
-    try {
+  // Use React Query for better data loading experience
+  const { data: storeItems = [], isLoading, refetch } = useQuery({
+    queryKey: ['storeItems'],
+    queryFn: async () => {
       // Fetch available maps from set_map table
       const { data: mapData, error: mapError } = await supabase
         .from("set_map")
@@ -51,40 +47,38 @@ const StorePage = () => {
       // For each map, check key availability from key storage DB
       const itemsWithStock = await Promise.all(
         (mapData || []).map(async (map) => {
-          // Fetch pending keys count
-          const { data: keysData, error: keysError } = await keyStorage
-            .from("keys")
-            .select("id")
-            .eq("status", "Pending")
-            .limit(100);
-          
-          if (keysError) {
-            console.error(`Error fetching keys for ${map.name}:`, keysError);
+          try {
+            // Fetch pending keys count
+            const { data: keysData, error: keysError } = await keyStorage
+              .from("keys")
+              .select("id")
+              .eq("status", "Pending")
+              .limit(100);
+            
+            if (keysError) {
+              console.error(`Error fetching keys for ${map.name}:`, keysError);
+              return {
+                ...map,
+                stock: 0
+              };
+            }
+            
             return {
               ...map,
-              stock: 0
+              stock: keysData?.length || 0
             };
+          } catch (err) {
+            console.error(`Error processing map ${map.name}:`, err);
+            return { ...map, stock: 0 };
           }
-          
-          return {
-            ...map,
-            stock: keysData?.length || 0
-          };
         })
       );
       
-      setStoreItems(itemsWithStock);
-    } catch (error) {
-      console.error("Error fetching store items:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load store items"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return itemsWithStock;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
   
   const handlePurchase = async (item: StoreItem) => {
     if (!user) {
@@ -115,9 +109,7 @@ const StorePage = () => {
     }
     
     // Update the loading state for this specific item
-    setStoreItems(prev => prev.map(storeItem => 
-      storeItem.id === item.id ? { ...storeItem, isLoading: true } : storeItem
-    ));
+    setProcessingItems(prev => ({ ...prev, [item.id]: true }));
     
     try {
       // Step 1: Get a pending key from key storage
@@ -187,17 +179,15 @@ const StorePage = () => {
         })
         .eq("id", user.id);
       
-      // Step 6: Refresh store items
-      await fetchStoreItems();
+      // Step 6: Refresh store items and user data
+      refetch();
+      updateUserData();
       
       // Notify user of successful purchase
       toast({
         title: "Purchase Successful",
         description: `You have purchased ${item.name}`,
       });
-      
-      // Update the local balance in the auth store
-      // This will be handled by the auth state listener
       
     } catch (error) {
       console.error("Purchase error:", error);
@@ -207,10 +197,8 @@ const StorePage = () => {
         description: "An error occurred during purchase. Please try again."
       });
     } finally {
-      // Reset loading state
-      setStoreItems(prev => prev.map(storeItem => 
-        storeItem.id === item.id ? { ...storeItem, isLoading: false } : storeItem
-      ));
+      // Reset loading state for this specific item
+      setProcessingItems(prev => ({ ...prev, [item.id]: false }));
     }
   };
   
@@ -219,7 +207,11 @@ const StorePage = () => {
       <Layout>
         <div className="max-w-4xl mx-auto pt-8 flex justify-center">
           <div className="flex flex-col items-center">
-            <Loader2 className="h-10 w-10 animate-spin text-pink-DEFAULT" />
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-4 border-t-pink-DEFAULT border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-r-pink-DEFAULT border-b-transparent border-l-transparent animate-spin animation-delay-150"></div>
+              <div className="absolute inset-4 rounded-full border-2 border-t-transparent border-r-transparent border-b-pink-DEFAULT border-l-transparent animate-spin animation-delay-300"></div>
+            </div>
             <p className="text-gray-400 mt-4">Loading store items...</p>
           </div>
         </div>
@@ -229,7 +221,7 @@ const StorePage = () => {
   
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto mt-10">
+      <div className="max-w-4xl mx-auto">
         <GlassCard className="p-6">
           <Accordion type="single" collapsible className="w-full">
             {storeItems.length > 0 ? (
@@ -271,10 +263,10 @@ const StorePage = () => {
                       <div className="flex justify-end">
                         <Button
                           onClick={() => handlePurchase(item)}
-                          disabled={!user || user.balance < item.price || item.stock <= 0 || item.isLoading}
-                          className="button-3d shine-effect bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600"
+                          disabled={!user || user.balance < item.price || item.stock <= 0 || processingItems[item.id]}
+                          className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105 rounded-lg shadow-lg hover:shadow-pink-DEFAULT/20"
                         >
-                          {item.isLoading ? (
+                          {processingItems[item.id] ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Processing...
