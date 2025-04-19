@@ -72,9 +72,15 @@ export default function AuthCallback() {
             description: `Welcome, ${discordGlobalName}!`,
           });
           
-          // If in a popup, close it
+          // If in a popup, close it automatically
           if (window.opener) {
-            window.close();
+            try {
+              // Notify the opener window about successful login if needed
+              window.opener.postMessage('auth-successful', window.location.origin);
+              window.close();
+            } catch (err) {
+              console.error('Error communicating with opener window:', err);
+            }
           } else {
             navigate('/');
           }

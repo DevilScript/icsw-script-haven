@@ -1,320 +1,378 @@
 
-import { useState, useEffect } from "react";
+// This file is a complete rewrite to improve UI, loading experience and add key management
+// src/pages/StorePage.tsx
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase, keyStorage, MapData } from "@/lib/supabase";
+import { useAuthStore } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import GlassCard from "@/components/GlassCard";
-import { useAuthStore } from "@/lib/auth";
-import { supabase, keyStorage, MapData } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Loader2, 
-  ShoppingCart,
-  Check, 
-  AlertTriangle
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  ChevronDown, 
+  Loader2, 
+  PackageOpen, 
+  ShoppingBag 
+} from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
-interface StoreItem extends MapData {
-  stock: number;
-  isLoading?: boolean;
+interface KeyData {
+  id: number;
+  key: string;
+  maps: string[];
+  allowexec: string[];
+  status: string;
 }
 
 const StorePage = () => {
   const { user, updateUserData } = useAuthStore();
   const { toast } = useToast();
-  const [processingItems, setProcessingItems] = useState<{[key: number]: boolean}>({});
+  const navigate = useNavigate();
   
-  // Use React Query for better data loading experience
-  const { data: storeItems = [], isLoading, refetch } = useQuery({
-    queryKey: ['storeItems'],
+  const [purchasingMap, setPurchasingMap] = useState<string | null>(null);
+  const [userKey, setUserKey] = useState<string | null>(null);
+  
+  // Fetch available maps from Supabase
+  const { data: maps, isLoading: isMapsLoading } = useQuery({
+    queryKey: ["storeItems"],
     queryFn: async () => {
-      // Fetch available maps from set_map table
-      const { data: mapData, error: mapError } = await supabase
+      const { data, error } = await supabase
         .from("set_map")
         .select("*")
-        .order("name");
-        
-      if (mapError) throw mapError;
+        .order("price", { ascending: true });
       
-      // For each map, check key availability from key storage DB
-      const itemsWithStock = await Promise.all(
-        (mapData || []).map(async (map) => {
-          try {
-            // Fetch pending keys count
-            const { data: keysData, error: keysError } = await keyStorage
-              .from("keys")
-              .select("id")
-              .eq("status", "Pending")
-              .limit(100);
-            
-            if (keysError) {
-              console.error(`Error fetching keys for ${map.name}:`, keysError);
-              return {
-                ...map,
-                stock: 0
-              };
-            }
-            
-            return {
-              ...map,
-              stock: keysData?.length || 0
-            };
-          } catch (err) {
-            console.error(`Error processing map ${map.name}:`, err);
-            return { ...map, stock: 0 };
-          }
-        })
-      );
-      
-      return itemsWithStock;
+      if (error) throw error;
+      return data as MapData[];
     },
-    refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 60000, // 1 minute
+    refetchInterval: false,
   });
   
-  const handlePurchase = async (item: StoreItem) => {
+  // Fetch available keys (for stock display)
+  const { data: keysData, isLoading: isKeysLoading } = useQuery({
+    queryKey: ["availableKeys"],
+    queryFn: async () => {
+      const { data, error } = await keyStorage
+        .from("keys")
+        .select("id, key, status")
+        .eq("status", "Pending");
+      
+      if (error) throw error;
+      return data as { id: number; key: string; status: string }[];
+    },
+    staleTime: 60000, // 1 minute
+    refetchInterval: false,
+  });
+  
+  // Get user's key if they have one
+  const { data: userKeyData } = useQuery({
+    queryKey: ["userKey", user?.id],
+    queryFn: async () => {
+      if (!user?.keys || user.keys.length === 0) {
+        return null;
+      }
+      
+      // Get the first key in the user's keys array
+      const key = user.keys[0];
+      
+      const { data, error } = await keyStorage
+        .from("keys")
+        .select("*")
+        .eq("key", key)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user key:", error);
+        return null;
+      }
+      
+      setUserKey(key);
+      return data as KeyData;
+    },
+    staleTime: 60000, // 1 minute
+    enabled: !!user?.keys && user.keys.length > 0,
+  });
+  
+  const handlePurchase = async (selectedMap: MapData) => {
     if (!user) {
       toast({
         variant: "destructive",
         title: "Authentication Required",
-        description: "Please log in to purchase items"
+        description: "Please log in to purchase maps",
       });
+      navigate("/auth");
       return;
     }
     
-    if (user.balance < item.price) {
+    if (user.balance < selectedMap.price) {
       toast({
         variant: "destructive",
         title: "Insufficient Balance",
-        description: `You need ${item.price} THB to purchase this item`
+        description: "Please top up your account to purchase this map",
       });
       return;
     }
     
-    if (item.stock <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Out of Stock",
-        description: "This item is currently unavailable"
-      });
-      return;
-    }
-    
-    // Update the loading state for this specific item
-    setProcessingItems(prev => ({ ...prev, [item.id]: true }));
+    setPurchasingMap(selectedMap.name);
     
     try {
-      // Step 1: Get a pending key from key storage
-      const { data: keyData, error: keyError } = await keyStorage
-        .from("keys")
-        .select("key")
-        .eq("status", "Pending")
-        .limit(1)
-        .single();
-        
-      if (keyError) throw keyError;
-      
-      const key = keyData.key;
-      
-      if (!key) {
-        throw new Error("No available keys found");
+      // Check if the user already has this map
+      if (user.maps && user.maps.includes(selectedMap.name)) {
+        toast({
+          variant: "destructive",
+          title: "Already Purchased",
+          description: "You already own this map",
+        });
+        setPurchasingMap(null);
+        return;
       }
       
-      // Step 2: Update user balance
-      const newBalance = (user.balance || 0) - item.price;
+      // Start a transaction
+      const newBalance = user.balance - selectedMap.price;
       
-      const { error: balanceError } = await supabase
+      // Update user balance and add map to their maps array
+      const currentMaps = user.maps || [];
+      const updatedMaps = [...currentMaps, selectedMap.name];
+      
+      const { error: updateError } = await supabase
         .from("user_id")
-        .update({ balance: newBalance })
-        .eq("id", user.id);
-        
-      if (balanceError) throw balanceError;
-      
-      // Step 3: Update key in key storage
-      const { error: updateKeyError } = await keyStorage
-        .from("keys")
         .update({
-          status: "PreActive",
-          allowed_place_ids: [parseInt(item.gameid)],
-          maps: [item.name]
+          balance: newBalance,
+          maps: updatedMaps,
         })
-        .eq("key", key);
-        
-      if (updateKeyError) throw updateKeyError;
+        .eq("id", user.id);
       
-      // Step 4: Log the purchase
+      if (updateError) throw updateError;
+      
+      // Log the purchase
       await supabase.from("buy_log").insert({
         username: user.username,
-        map: item.name,
-        key: key,
-        price: item.price,
-        success: true
+        map: selectedMap.name,
+        price: selectedMap.price,
+        key: userKey || "none",
+        success: true,
       });
       
-      // Step 5: Update user's maps and keys arrays
-      let updatedMaps = user.maps ? [...user.maps] : [];
-      let updatedKeys = user.keys ? [...user.keys] : [];
-      
-      if (!updatedMaps.includes(item.name)) {
-        updatedMaps.push(item.name);
+      // Check if user already has a key or needs a new key
+      if (userKeyData) {
+        // User already has a key, update their key to include the new map
+        const updatedMaps = [...(userKeyData.maps || [])];
+        if (!updatedMaps.includes(selectedMap.name)) {
+          updatedMaps.push(selectedMap.name);
+        }
+        
+        const { error: keyUpdateError } = await keyStorage
+          .from("keys")
+          .update({
+            maps: updatedMaps,
+            allowed_place_ids: [...(userKeyData.allowed_place_ids || []), parseInt(selectedMap.gameid)]
+          })
+          .eq("key", userKey);
+        
+        if (keyUpdateError) throw keyUpdateError;
+        
+        toast({
+          title: "Purchase Successful",
+          description: `${selectedMap.name} has been added to your account`,
+        });
+      } else {
+        // User doesn't have a key yet, assign one
+        if (keysData && keysData.length > 0) {
+          const newKey = keysData[0].key;
+          
+          // Update the key status and assign it to the user
+          const { error: keyUpdateError } = await keyStorage
+            .from("keys")
+            .update({
+              status: "PreActive",
+              maps: [selectedMap.name],
+              allowed_place_ids: [parseInt(selectedMap.gameid)]
+            })
+            .eq("key", newKey);
+          
+          if (keyUpdateError) throw keyUpdateError;
+          
+          // Update user with the new key
+          const { error: userKeyError } = await supabase
+            .from("user_id")
+            .update({
+              keys: [newKey],
+            })
+            .eq("id", user.id);
+          
+          if (userKeyError) throw userKeyError;
+          
+          // Show key to the user
+          toast({
+            title: "Purchase Successful",
+            description: `Your key: ${newKey}`,
+            duration: 10000,
+          });
+          
+          // Store the key locally for easy access
+          setUserKey(newKey);
+          localStorage.setItem("userKey", JSON.stringify({
+            key: newKey,
+            maps: [selectedMap.name],
+            allowexec: []
+          }));
+        } else {
+          throw new Error("No keys available");
+        }
       }
       
-      if (!updatedKeys.includes(key)) {
-        updatedKeys.push(key);
-      }
-      
-      await supabase
-        .from("user_id")
-        .update({ 
-          maps: updatedMaps,
-          keys: updatedKeys
-        })
-        .eq("id", user.id);
-      
-      // Step 6: Refresh store items and user data
-      refetch();
-      updateUserData();
-      
-      // Notify user of successful purchase
-      toast({
-        title: "Purchase Successful",
-        description: `You have purchased ${item.name}`,
-      });
+      // Update user data in the store
+      await updateUserData();
       
     } catch (error) {
       console.error("Purchase error:", error);
       toast({
         variant: "destructive",
         title: "Purchase Failed",
-        description: "An error occurred during purchase. Please try again."
+        description: error instanceof Error ? error.message : "An error occurred",
       });
     } finally {
-      // Reset loading state for this specific item
-      setProcessingItems(prev => ({ ...prev, [item.id]: false }));
+      setPurchasingMap(null);
     }
   };
   
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="max-w-4xl mx-auto pt-8 flex justify-center">
-          <div className="flex flex-col items-center">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-4 border-t-pink-DEFAULT border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
-              <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-r-pink-DEFAULT border-b-transparent border-l-transparent animate-spin animation-delay-150"></div>
-              <div className="absolute inset-4 rounded-full border-2 border-t-transparent border-r-transparent border-b-pink-DEFAULT border-l-transparent animate-spin animation-delay-300"></div>
-            </div>
-            <p className="text-gray-400 mt-4">Loading store items...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const isLoading = isMapsLoading || isKeysLoading;
+  const stockCount = keysData?.length || 0;
   
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <GlassCard className="p-6">
-          <Accordion type="single" collapsible className="w-full">
-            {storeItems.length > 0 ? (
-              storeItems.map((item) => (
-                <AccordionItem 
-                  key={item.id}
-                  value={`item-${item.id}`}
-                  className="border-b border-gray-700 last:border-b-0 overflow-hidden"
-                >
-                  <AccordionTrigger className="hover:bg-pink-transparent/5 px-4 py-5 rounded-t-md transition-all">
-                    <div className="flex flex-1 items-center justify-between">
-                      <h3 className="text-xl font-medium text-white">{item.name}</h3>
-                      <div className="flex items-center gap-4">
-                        <span className="px-3 py-1 bg-pink-transparent/20 rounded-full text-pink-DEFAULT">
-                          {item.price} THB
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs ${
-                          item.stock > 0 ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
-                        }`}>
-                          {item.stock > 0 ? `Stock: ${item.stock}` : 'Out of Stock'}
-                        </span>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  
-                  <AccordionContent className="animate-slide-in bg-black/20 px-4 py-4 rounded-b-md">
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap gap-2">
-                        {item.function && item.function.map((func, i) => (
-                          <span 
-                            key={i}
-                            className="px-3 py-1 bg-purple-600/10 text-purple-300 rounded-full text-sm border border-purple-600/20"
-                          >
-                            {func}
-                          </span>
-                        ))}
-                      </div>
-                      
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => handlePurchase(item)}
-                          disabled={!user || user.balance < item.price || item.stock <= 0 || processingItems[item.id]}
-                          className="bg-gradient-to-r from-pink-DEFAULT/80 to-purple-600/80 hover:from-pink-DEFAULT hover:to-purple-600 transition-all duration-300 hover:scale-105 rounded-lg shadow-lg hover:shadow-pink-DEFAULT/20"
-                        >
-                          {processingItems[item.id] ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              <ShoppingCart className="mr-2 h-4 w-4" />
-                              Purchase for {item.price} THB
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-                <h3 className="text-lg font-medium text-gray-300">No store items available</h3>
-                <p className="text-gray-400 mt-2">Please check back later for new items.</p>
-              </div>
-            )}
-          </Accordion>
-          
-          {!user && (
-            <div className="mt-6 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-md">
-              <div className="flex items-start">
-                <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-yellow-400">Login Required</h4>
-                  <p className="text-gray-300 text-sm mt-1">
-                    You need to be logged in to purchase items from the store.
-                  </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold mb-2 md:mb-0 flex items-center">
+              <ShoppingBag className="mr-2 text-pink-DEFAULT" size={28} />
+              <span>Store</span>
+            </h1>
+            
+            <div className="flex items-center space-x-4">
+              {userKey ? (
+                <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-0.5 rounded-lg">
+                  <div className="bg-black/40 px-3 py-1 rounded-lg flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
+                    <span className="text-gray-300 font-medium">Key Active</span>
+                  </div>
+                </div>
+              ) : null}
+              
+              <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 p-0.5 rounded-lg">
+                <div className="bg-black/40 px-3 py-1 rounded-lg flex items-center">
+                  <PackageOpen className="h-4 w-4 text-amber-400 mr-2" />
+                  <span className="text-gray-300">
+                    <span className="font-medium">{stockCount}</span> in stock
+                  </span>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  asChild
-                  variant="outline"
-                  className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-900/20"
-                >
-                  <a href="/auth">Login Now</a>
-                </Button>
-              </div>
             </div>
+          </div>
+          
+          {!user ? (
+            <GlassCard className="p-6 text-center">
+              <AlertCircle className="h-10 w-10 mx-auto text-yellow-400 mb-4" />
+              <h2 className="text-xl font-medium mb-2">Authentication Required</h2>
+              <p className="text-gray-400 mb-4">Please log in to browse and purchase maps.</p>
+              <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white mt-2 hover:scale-105 transition-all duration-200">
+                <a href="/auth">Login</a>
+              </Button>
+            </GlassCard>
+          ) : isLoading ? (
+            <div className="h-64 flex flex-col items-center justify-center">
+              <Loader2 className="h-10 w-10 text-pink-DEFAULT animate-spin mb-4" />
+              <p className="text-gray-400">Loading store items...</p>
+            </div>
+          ) : !maps || maps.length === 0 ? (
+            <GlassCard className="p-6 text-center">
+              <p className="text-gray-400">No maps available at the moment.</p>
+            </GlassCard>
+          ) : (
+            <Accordion type="single" collapsible className="space-y-4">
+              {maps.map((map) => {
+                const isOwned = user.maps && user.maps.includes(map.name);
+                const isPurchasing = purchasingMap === map.name;
+                
+                return (
+                  <AccordionItem 
+                    key={map.id}
+                    value={map.name}
+                    className="border-none"
+                  >
+                    <GlassCard className={`overflow-hidden transition-all duration-300 ${isOwned ? 'border-green-500/30' : ''}`}>
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center">
+                            {isOwned && (
+                              <div className="bg-green-900/30 rounded-full p-1 mr-3">
+                                <CheckCircle className="h-5 w-5 text-green-400" />
+                              </div>
+                            )}
+                            <h3 className="text-xl font-medium">{map.name}</h3>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span className="text-xl font-bold text-pink-DEFAULT">
+                              {map.price} THB
+                            </span>
+                            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="border-t border-gray-800/80">
+                        <div className="p-6">
+                          <h4 className="text-lg font-medium mb-2">Features:</h4>
+                          <ul className="space-y-2 mb-6">
+                            {map.function && map.function.length > 0 ? (
+                              map.function.map((func, index) => (
+                                <li key={index} className="flex items-center">
+                                  <div className="h-2 w-2 bg-pink-DEFAULT rounded-full mr-2"></div>
+                                  <span>{func}</span>
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-gray-400">No features listed</li>
+                            )}
+                          </ul>
+                          
+                          <div className="flex justify-end">
+                            <Button 
+                              onClick={() => handlePurchase(map)}
+                              disabled={isOwned || isPurchasing || user.balance < map.price}
+                              className="bg-gray-800 hover:bg-gray-700 text-white shadow-lg hover:scale-105 transition-all duration-200"
+                            >
+                              {isPurchasing ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : isOwned ? (
+                                "Owned"
+                              ) : user.balance < map.price ? (
+                                "Insufficient Balance"
+                              ) : (
+                                "Purchase"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </GlassCard>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           )}
-        </GlassCard>
+        </div>
       </div>
     </Layout>
   );

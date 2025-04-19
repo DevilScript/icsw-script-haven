@@ -72,7 +72,7 @@ const AuthPage = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          skipBrowserRedirect: true, // This is the key change to prevent main page redirection
+          skipBrowserRedirect: true, // Prevent main page redirection
           redirectTo: import.meta.env.VITE_SUPABASE_SITE_URL || 'http://localhost:5173/auth/callback',
           scopes: 'identify email',
         },
@@ -121,8 +121,8 @@ const AuthPage = () => {
               clearInterval(checkPopupClosed);
               setIsLoading(false);
               
-              // Close the popup
-              setTimeout(() => popup.close(), 500);
+              // Close the popup immediately after successful authentication
+              popup.close();
               
               // Check for session
               const { data: sessionData } = await supabase.auth.getSession();

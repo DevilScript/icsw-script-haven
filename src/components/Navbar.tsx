@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
-import { HelpCircle, Menu, X, LogIn, History, Key, ChevronDown, Wallet, Bell } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { HelpCircle, Menu, X, LogIn, History, Key, ChevronDown, Wallet, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +39,7 @@ const Navbar = () => {
   const [balance, setBalance] = useState<number>(0);
   const { user, logout } = useAuthStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -130,6 +133,7 @@ const Navbar = () => {
         description: 'Logged out successfully' 
       });
       setIsOpen(false);
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast({ 
@@ -183,36 +187,6 @@ const Navbar = () => {
                   {item.name}
                 </NavLink>
               ))}
-              
-              {/* Add History and Reset-HWID to nav items when logged in */}
-              {nickname && (
-                <>
-                  <NavLink
-                    to="/history"
-                    className={({ isActive }) =>
-                      `py-1 relative shine-effect ${
-                        isActive
-                          ? "text-[rgb(255,179,209)]"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    History
-                  </NavLink>
-                  <NavLink
-                    to="/reset-hwid"
-                    className={({ isActive }) =>
-                      `py-1 relative shine-effect ${
-                        isActive
-                          ? "text-[rgb(255,179,209)]"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    Reset HWID
-                  </NavLink>
-                </>
-              )}
             </div>
           </div>
 
@@ -236,23 +210,40 @@ const Navbar = () => {
                   </div>
                 </div>
 
-                {/* User display - styled similarly to THB display */}
-                <div className="bg-gradient-to-r from-gray-700/30 to-gray-900/30 p-0.5 rounded-full backdrop-blur-sm">
-                  <div className="bg-black/40 px-3 py-1 rounded-full flex items-center group hover:bg-black/60 transition-all duration-300">
-                    <div className="h-5 w-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden mr-1">
-                      {nickname.charAt(0).toUpperCase()}
+                {/* User display with dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="bg-gradient-to-r from-gray-700/30 to-gray-900/30 p-0.5 rounded-full backdrop-blur-sm cursor-pointer hover:bg-gray-700/40 transition-all duration-200 shadow-md">
+                      <div className="bg-black/40 px-3 py-1 rounded-full flex items-center group hover:bg-black/60">
+                        <div className="h-5 w-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden mr-1">
+                          {nickname.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-gray-200 font-medium">{nickname}</span>
+                        <ChevronDown className="h-3 w-3 text-gray-400 ml-1" />
+                      </div>
                     </div>
-                    <span className="text-gray-200 font-medium">{nickname}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="ml-1 p-0 h-auto hover:bg-transparent"
-                      onClick={handleLogout}
-                    >
-                      <LogIn className="h-3 w-3 text-gray-400 hover:text-white rotate-180" />
-                    </Button>
-                  </div>
-                </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48 bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 shadow-xl animate-fade-in">
+                    <DropdownMenuLabel className="text-gray-300 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      User Profile
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-gray-700/50" />
+                    <DropdownMenuItem className="text-gray-300 hover:bg-gray-800 focus:bg-gray-800 cursor-pointer" onClick={() => navigate('/history')}>
+                      <History className="h-4 w-4 mr-2" />
+                      History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-gray-300 hover:bg-gray-800 focus:bg-gray-800 cursor-pointer" onClick={() => navigate('/reset-hwid')}>
+                      <Key className="h-4 w-4 mr-2" />
+                      Reset HWID
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-gray-700/50" />
+                    <DropdownMenuItem className="text-red-400 hover:text-red-300 hover:bg-red-900/20 focus:bg-red-900/20 cursor-pointer" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <Button 
@@ -302,41 +293,7 @@ const Navbar = () => {
                 </NavLink>
               ))}
               
-              {/* Add History and Reset-HWID to mobile nav when logged in */}
               {nickname && (
-                <>
-                  <NavLink
-                    to="/history"
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      `px-4 py-2 rounded-md ${
-                        isActive
-                          ? "bg-pink-transparent text-pink-DEFAULT"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    <History className="h-4 w-4 mr-2 inline" />
-                    History
-                  </NavLink>
-                  <NavLink
-                    to="/reset-hwid"
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      `px-4 py-2 rounded-md ${
-                        isActive
-                          ? "bg-pink-transparent text-pink-DEFAULT"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    <Key className="h-4 w-4 mr-2 inline" />
-                    Reset HWID
-                  </NavLink>
-                </>
-              )}
-              
-              {nickname ? (
                 <>
                   <div className="flex items-center justify-between mx-4 px-4 py-2">
                     {/* Balance display for mobile */}
@@ -356,16 +313,48 @@ const Navbar = () => {
                     </div>
                   </div>
                   
+                  <NavLink
+                    to="/history"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md ${
+                        isActive
+                          ? "bg-gray-800/60 text-gray-200"
+                          : "text-gray-300 hover:text-white hover:bg-gray-800/30"
+                      }`
+                    }
+                  >
+                    <History className="h-4 w-4 mr-2 inline" />
+                    History
+                  </NavLink>
+                  
+                  <NavLink
+                    to="/reset-hwid"
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `px-4 py-2 rounded-md ${
+                        isActive
+                          ? "bg-gray-800/60 text-gray-200"
+                          : "text-gray-300 hover:text-white hover:bg-gray-800/30"
+                      }`
+                    }
+                  >
+                    <Key className="h-4 w-4 mr-2 inline" />
+                    Reset HWID
+                  </NavLink>
+                  
                   <Button
                     variant="ghost"
                     onClick={handleLogout}
-                    className="text-gray-300 hover:text-white justify-start px-4"
+                    className="mx-4 text-red-400 hover:text-red-300 hover:bg-red-900/20 justify-start"
                   >
-                    <LogIn className="h-4 w-4 mr-2 rotate-180" />
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </Button>
                 </>
-              ) : (
+              )}
+              
+              {!nickname && (
                 <Button 
                   asChild
                   className="mx-4 bg-gray-800 hover:bg-gray-700 text-white hover:scale-105 transition-all duration-200"
@@ -384,7 +373,7 @@ const Navbar = () => {
                   setHelpDialogOpen(true);
                   setIsOpen(false);
                 }}
-                className="text-gray-300 hover:text-white justify-start px-4"
+                className="text-gray-300 hover:text-white justify-start px-4 mx-4"
               >
                 <HelpCircle className="h-5 w-5 mr-2" />
                 Get Help

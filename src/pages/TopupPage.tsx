@@ -71,30 +71,29 @@ const TopupPage = () => {
     try {
       const voucherCode = extractVoucherCode(voucherLink);
       
-      // Make the request to the TrueMoney API
-      const response = await fetch(`https://gift.truemoney.com/campaign/vouchers/${voucherCode}/redeem`, {
+      // Use our Supabase Edge Function to handle TrueMoney redemption
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/truemoney-redeem`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
-          mobile: "0653835988",
-          voucher_hash: voucherCode
+          voucher_code: voucherCode
         })
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Topup API error:", errorText);
-        throw new Error("Failed to redeem voucher. Please check if the voucher is valid and not already used.");
+        const errorData = await response.json();
+        console.error("Topup API error:", errorData);
+        throw new Error(errorData.message || "Failed to redeem voucher. Please check if the voucher is valid and not already used.");
       }
       
       const data = await response.json();
-      console.log("TrueMoney API response:", data);
+      console.log("TrueMoney redeem response:", data);
       
       // Extract amount from response
-      const amount = data.amount || data.data?.amount || 0;
+      const amount = data.amount || 0;
       
       if (amount <= 0) {
         throw new Error("Invalid voucher amount");

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "./lib/auth";
+import { keyStorage, supabase } from "./lib/supabase";
 import Index from "./pages/Index";
 import ScriptPage from "./pages/ScriptPage";
 import StorePage from "./pages/StorePage";
@@ -30,7 +31,7 @@ const queryClient = new QueryClient({
 
 // RouteGuard component to check authentication and fetch user data when needed
 const RouteGuard = ({ children }: { children: React.ReactNode }) => {
-  const { loadUser, user } = useAuthStore();
+  const { loadUser, user, updateUserData } = useAuthStore();
   const [isLoaded, setIsLoaded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,9 +56,38 @@ const RouteGuard = ({ children }: { children: React.ReactNode }) => {
       // Check if user data exists and trigger a refresh if needed
       if (user) {
         queryClient.invalidateQueries({ queryKey: ['storeItems'] });
+        
+        // Fetch user's key information if they have any
+        const checkUserKeys = async () => {
+          if (user.keys && user.keys.length > 0) {
+            try {
+              // Query the keyStorage for the user's keys
+              const { data, error } = await keyStorage
+                .from('keys')
+                .select('*')
+                .eq('key', user.keys[0])
+                .single();
+                
+              if (data && !error) {
+                console.log("User has keys:", data);
+                // Store key data in localStorage for easy access
+                localStorage.setItem('userKey', JSON.stringify({
+                  key: data.key,
+                  maps: data.maps || [],
+                  allowexec: data.allowexec || []
+                }));
+              }
+            } catch (err) {
+              console.error("Error fetching user keys:", err);
+            }
+          }
+        };
+        
+        checkUserKeys();
+        updateUserData();
       }
     }
-  }, [location.pathname, isLoaded, user]);
+  }, [location.pathname, isLoaded, user, updateUserData]);
 
   if (!isLoaded) {
     return (
