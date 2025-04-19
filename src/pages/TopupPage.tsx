@@ -88,7 +88,7 @@ const TopupPage = () => {
         errorData = await response.json();
       } catch (jsonError) {
         console.error("Failed to parse Edge Function response:", jsonError);
-        throw new Error("Unexpected response from server. Please try again later.");
+        throw new Error("Unable to process voucher. The server returned an invalid response, possibly due to restrictions or invalid voucher.");
       }
 
       if (!response.ok) {
@@ -100,7 +100,7 @@ const TopupPage = () => {
         );
       }
 
-      const data = errorData; // Reuse parsed JSON
+      const data = errorData;
       console.log("TrueMoney redeem response:", data);
 
       const amount = data.amount || data.data?.amount_baht || 0;
