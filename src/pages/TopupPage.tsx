@@ -30,17 +30,33 @@ const TopupPage = () => {
 
   const extractVoucherCode = (link: string) => {
     try {
+      // Check if the input is a valid URL
       const url = new URL(link);
+
+      // Validate hostname and pathname
+      if (url.hostname !== "gift.truemoney.com") {
+        throw new Error("Invalid domain. Use gift.truemoney.com");
+      }
+      if (!url.pathname.startsWith("/campaign")) {
+        throw new Error("Invalid path. Use /campaign");
+      }
+
+      // Extract voucher code from query parameter
       const params = new URLSearchParams(url.search);
       const voucherCode = params.get("v");
 
-      if (!voucherCode) {
-        throw new Error("Invalid voucher link format");
+      // Validate voucher code format
+      if (!voucherCode || !/^[a-zA-Z0-9]{18}$/.test(voucherCode)) {
+        throw new Error("Invalid voucher code format. It should be 18 alphanumeric characters.");
       }
 
       return voucherCode;
     } catch (error) {
-      throw new Error("Invalid voucher link. Please check the format.");
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Invalid voucher link. Please use format: https://gift.truemoney.com/campaign/?v=xxxxxxxxxx"
+      );
     }
   };
 
@@ -55,7 +71,7 @@ const TopupPage = () => {
     }
 
     if (!voucherLink.trim()) {
-      setErrorMessage("Please enter a valid TrueMoney Wallet Gift voucher link");
+      setErrorMessage("Please enter a TrueMoney Wallet Gift voucher link");
       return;
     }
 
@@ -157,7 +173,7 @@ const TopupPage = () => {
                   <Gift className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="..."
+                    placeholder="https://gift.truemoney.com/campaign/?v=xxxxxxxxxx"
                     className="pl-10 bg-black/30 border-gray-700 focus:border-pink-DEFAULT focus:ring-pink-DEFAULT/20"
                     value={voucherLink}
                     onChange={handleVoucherLinkChange}
