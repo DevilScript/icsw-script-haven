@@ -127,12 +127,6 @@ const ResetHWIDPage = () => {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto text-center py-12">
-          <h1 className="text-3xl font-bold mb-6">
-            <span className="relative">
-              Reset HWID
-              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></span>
-            </span>
-          </h1>
           <GlassCard>
             <p className="text-xl text-gray-300">Please log in to reset your HWID</p>
             <Button
@@ -150,13 +144,6 @@ const ResetHWIDPage = () => {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          <span className="relative">
-            Reset HWID
-            <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></span>
-          </span>
-        </h1>
-        
         <GlassCard className="feature-card">
           <div className="space-y-6">
             <div className="bg-black/20 p-5 rounded-lg border border-pink-pastel/20">

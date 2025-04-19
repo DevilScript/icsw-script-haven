@@ -1,11 +1,14 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../integrations/supabase/client';
-import { toast } from '../hooks/use-toast';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function handleAuthCallback() {
@@ -14,8 +17,8 @@ export default function AuthCallback() {
         if (error) {
           console.error('Error getting session:', error);
           toast({
-            title: 'ข้อผิดพลาด',
-            description: 'ไม่สามารถดึงข้อมูลเซสชันได้ กรุณาลองใหม่',
+            title: 'Error',
+            description: 'Unable to get session data, please try again',
             variant: 'destructive',
           });
           navigate('/auth');
@@ -25,17 +28,20 @@ export default function AuthCallback() {
         if (data.session) {
           const user = data.session.user;
           const userMetadata = user?.user_metadata || {};
-          // ลองดึง display_name, global_name, name, หรือ username
+          
+          // Try to get the best display name
           const discordGlobalName =
+            userMetadata.full_name ||
             userMetadata.display_name ||
             userMetadata.global_name ||
             userMetadata.name ||
             userMetadata.username ||
-            'Unknown';
-          const username = user.email || user.id; // ใช้ email หรือ id เป็น username
-          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2)); // Debug log
+            'User';
+            
+          const username = user.email || user.id;
+          console.log('Full user_metadata:', JSON.stringify(userMetadata, null, 2));
 
-          // อัปเดตหรือเพิ่มข้อมูลในตาราง user_id
+          // Update or insert user data in user_id table
           const { error: upsertError } = await supabase
             .from('user_id')
             .upsert(
@@ -46,15 +52,15 @@ export default function AuthCallback() {
                 created_at: new Date().toISOString(),
               },
               {
-                onConflict: 'id', // อัปเดตถ้ามี id อยู่แล้ว
+                onConflict: 'id',
               }
             );
 
           if (upsertError) {
             console.error('Error upserting user_id:', upsertError);
             toast({
-              title: 'ข้อผิดพลาด',
-              description: 'ไม่สามารถบันทึกข้อมูลผู้ใช้ได้ กรุณาติดต่อฝ่ายสนับสนุน',
+              title: 'Error',
+              description: 'Could not update user data, please contact support',
               variant: 'destructive',
             });
             navigate('/auth');
@@ -62,14 +68,20 @@ export default function AuthCallback() {
           }
 
           toast({
-            title: 'สำเร็จ',
-            description: `ยินดีต้อนรับ ${discordGlobalName}!`,
+            title: 'Success',
+            description: `Welcome, ${discordGlobalName}!`,
           });
-          navigate('/'); // ไปที่หน้าแรก
+          
+          // If in a popup, close it
+          if (window.opener) {
+            window.close();
+          } else {
+            navigate('/');
+          }
         } else {
           toast({
-            title: 'ข้อผิดพลาด',
-            description: 'ไม่พบเซสชันผู้ใช้ กรุณาลองใหม่',
+            title: 'Error',
+            description: 'No session found, please try again',
             variant: 'destructive',
           });
           navigate('/auth');
@@ -77,8 +89,8 @@ export default function AuthCallback() {
       } catch (err) {
         console.error('Unexpected error:', err);
         toast({
-          title: 'ข้อผิดพลาด',
-          description: 'เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่',
+          title: 'Error',
+          description: 'An unexpected error occurred',
           variant: 'destructive',
         });
         navigate('/auth');
@@ -86,14 +98,17 @@ export default function AuthCallback() {
     }
 
     handleAuthCallback();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">กำลังดำเนินการ...</h1>
-        <p>กรุณารอสักครู่ขณะที่เราตรวจสอบข้อมูลของคุณ</p>
-        <Button disabled>กำลังโหลด...</Button>
+        <h1 className="text-2xl font-bold mb-4">Processing Login</h1>
+        <p className="text-gray-400 mb-6">Please wait while we verify your details...</p>
+        <Button disabled className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading...
+        </Button>
       </div>
     </div>
   );

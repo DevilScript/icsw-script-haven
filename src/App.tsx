@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuthStore } from "./lib/auth";
 import Index from "./pages/Index";
 import ScriptPage from "./pages/ScriptPage";
 import StorePage from "./pages/StorePage";
@@ -19,13 +20,20 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoaded(true);
-    }, 1000);
-  }, []);
+    // Load user data
+    const initializeAuth = async () => {
+      await loadUser();
+      // Simulate loading
+      setTimeout(() => {
+        setIsLoaded(true);
+      }, 1000);
+    };
+    
+    initializeAuth();
+  }, [loadUser]);
 
   if (!isLoaded) {
     return (

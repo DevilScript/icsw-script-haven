@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { HelpCircle, Menu, X, LogIn, History, Key } from "lucide-react";
+import { HelpCircle, Menu, X, LogIn, History, Key, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,7 +35,7 @@ const Navbar = () => {
   const [discordTag, setDiscordTag] = useState("");
   const [nickname, setNickname] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -50,39 +51,43 @@ const Navbar = () => {
   }, [lastScrollY]);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data, error } = await supabase
-          .from('user_id') // เปลี่ยนจาก 'profiles' เป็น 'user_id'
-          .select('nickname, balance')
-          .eq('id', session.user.id)
-          .single();
-        if (data) {
-          setNickname(data.nickname || 'User');
-          setBalance(data.balance || 0);
-        }
-        if (error) {
-          console.error('Error fetching user data:', error);
-          toast({ title: 'Error', description: 'Failed to fetch user data' });
-        }
-      }
-    };
-    fetchUserData();
+    if (user) {
+      setNickname(user.nickname || user.username || 'User');
+      setBalance(user.balance || 0);
+    } else {
+      setNickname(null);
+      setBalance(0);
+    }
+  }, [user]);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        fetchUserData();
-      } else {
-        setNickname(null);
-        setBalance(0);
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          // User is logged in, fetch their data
+          const { data, error } = await supabase
+            .from('user_id')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (data && !error) {
+            setNickname(data.nickname || data.username || 'User');
+            setBalance(data.balance || 0);
+          }
+        } else {
+          // User is logged out
+          setNickname(null);
+          setBalance(0);
+        }
       }
-    });
+    );
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
 
   const handleHelpSubmit = async () => {
     if (!helpMessage) {
@@ -113,6 +118,24 @@ const Navbar = () => {
         variant: "destructive",
         title: "Error",
         description: "Failed to send message",
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({ 
+        title: 'Success', 
+        description: 'Logged out successfully' 
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({ 
+        variant: 'destructive',
+        title: 'Error', 
+        description: 'Failed to log out' 
       });
     }
   };
@@ -173,24 +196,20 @@ const Navbar = () => {
               <HelpCircle className="h-5 w-5" />
             </Button>
             
-            {user ? (
+            {nickname ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a] text-white flex items-center space-x-2"
-                    size="sm"
+                    className="button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a] text-white flex items-center gap-2"
                   >
-                    <span>{nickname || 'User'}</span>
+                    <User className="h-4 w-4" />
+                    <span>{nickname}</span>
                     <span className="text-pink-DEFAULT">{balance} THB</span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-[#222222] text-white border-pink-DEFAULT/20">
-                  <DropdownMenuItem asChild>
-                    <NavLink to="/profile" className="hover:bg-pink-transparent/10">
-                      Profile
-                    </NavLink>
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <NavLink to="/history" className="hover:bg-pink-transparent/10">
                       <History className="h-4 w-4 mr-2 inline" />
@@ -204,10 +223,7 @@ const Navbar = () => {
                     </NavLink>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      toast({ title: 'Success', description: 'Logged out successfully' });
-                    }}
+                    onClick={handleLogout}
                     className="hover:bg-pink-transparent/10"
                   >
                     Logout
@@ -243,7 +259,7 @@ const Navbar = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden py-4 animate-fade-in mobile-nav">
+          <div className="md:hidden py-4 animate-fade-in mobile-nav bg-[#1a1a1f]/95 backdrop-blur-md shadow-lg rounded-b-lg">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
                 <NavLink
@@ -262,21 +278,17 @@ const Navbar = () => {
                 </NavLink>
               ))}
               
-              {user && (
+              {nickname ? (
                 <>
-                  <NavLink
-                    to="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      `px-4 py-2 rounded-md flex items-center ${
-                        isActive
-                          ? "bg-pink-transparent text-pink-DEFAULT"
-                          : "text-gray-300 hover:text-white"
-                      }`
-                    }
-                  >
-                    Profile
-                  </NavLink>
+                  <div className="mx-4 px-4 py-2 bg-[#222222] border border-pink-DEFAULT/20 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">{nickname}</span>
+                    </div>
+                    <div className="text-pink-DEFAULT text-sm">
+                      {balance} THB
+                    </div>
+                  </div>
                   <NavLink
                     to="/history"
                     onClick={() => setIsOpen(false)}
@@ -307,28 +319,13 @@ const Navbar = () => {
                   </NavLink>
                   <Button
                     variant="ghost"
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      toast({ title: 'Success', description: 'Logged out successfully' });
-                      setIsOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="text-gray-300 hover:text-white justify-start px-4"
                   >
                     Logout
                   </Button>
                 </>
-              )}
-              
-              <Button
-                variant="ghost"
-                onClick={() => setHelpDialogOpen(true)}
-                className="text-gray-300 hover:text-white justify-start px-4"
-              >
-                <HelpCircle className="h-5 w-5 mr-2" />
-                Get Help
-              </Button>
-              
-              {!user && (
+              ) : (
                 <Button 
                   asChild
                   className="mx-4 button-3d shine-effect bg-[#222222] hover:bg-[#2a2a2a]"
@@ -340,6 +337,18 @@ const Navbar = () => {
                   </NavLink>
                 </Button>
               )}
+              
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setHelpDialogOpen(true);
+                  setIsOpen(false);
+                }}
+                className="text-gray-300 hover:text-white justify-start px-4"
+              >
+                <HelpCircle className="h-5 w-5 mr-2" />
+                Get Help
+              </Button>
             </div>
           </div>
         )}

@@ -121,6 +121,7 @@ export type Database = {
           id: string
           keys: string[] | null
           maps: string[] | null
+          nickname: string | null
           username: string
         }
         Insert: {
@@ -129,6 +130,7 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
+          nickname?: string | null
           username: string
         }
         Update: {
@@ -137,6 +139,7 @@ export type Database = {
           id?: string
           keys?: string[] | null
           maps?: string[] | null
+          nickname?: string | null
           username?: string
         }
         Relationships: []

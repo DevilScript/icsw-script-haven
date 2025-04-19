@@ -1,11 +1,10 @@
 
 import { create } from 'zustand';
 import { supabase } from './supabase';
-import { useToast } from '@/hooks/use-toast';
 
 interface UserData {
   id: string;
-  username: string; // This is used consistently throughout the app
+  username: string;
   nickname: string;
   balance: number;
   keys?: string[];
@@ -13,15 +12,17 @@ interface UserData {
 }
 
 interface AuthState {
-  user: User | null;
+  user: UserData | null;
+  session: any | null;
   isLoading: boolean;
   login: (username: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loadUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  session: null,
   isLoading: true,
   login: async (username: string) => {
     try {
@@ -76,34 +77,78 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isLoading: false });
     }
   },
-  logout: () => {
-    localStorage.removeItem('username');
-    set({ user: null });
+  
+  logout: async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+      }
+      
+      localStorage.removeItem('username');
+      set({ user: null, session: null });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   },
+  
   loadUser: async () => {
     try {
       set({ isLoading: true });
-      const username = localStorage.getItem('username');
-
-      if (!username) {
+      
+      // First, check for Supabase session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Error getting session:', sessionError);
         set({ isLoading: false });
         return;
       }
-
-      const { data: user, error } = await supabase
-        .from('user_id')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (error) {
-        console.error('Error loading user:', error);
-        localStorage.removeItem('username');
-        set({ user: null, isLoading: false });
-        return;
+      
+      if (sessionData?.session) {
+        set({ session: sessionData.session });
+        
+        // Get user data from user_id table
+        const { data: userData, error: userError } = await supabase
+          .from('user_id')
+          .select('*')
+          .eq('id', sessionData.session.user.id)
+          .single();
+        
+        if (userError) {
+          console.error('Error loading user data:', userError);
+          set({ isLoading: false });
+          return;
+        }
+        
+        if (userData) {
+          set({ user: userData as UserData });
+          set({ isLoading: false });
+          return;
+        }
       }
-
-      set({ user: user as UserData, isLoading: false });
+      
+      // Fallback to legacy username check
+      const username = localStorage.getItem('username');
+      
+      if (username) {
+        const { data: userData, error: userError } = await supabase
+          .from('user_id')
+          .select('*')
+          .eq('username', username)
+          .single();
+        
+        if (userError) {
+          console.error('Error loading legacy user:', userError);
+          localStorage.removeItem('username');
+          set({ user: null, isLoading: false });
+          return;
+        }
+        
+        set({ user: userData as UserData, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
     } catch (error) {
       console.error('Load user error:', error);
       set({ isLoading: false });

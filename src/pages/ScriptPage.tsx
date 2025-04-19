@@ -150,13 +150,6 @@ const ScriptPage = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          <span className="relative">
-            Script Access
-            <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-pink-DEFAULT to-transparent"></span>
-          </span>
-        </h1>
-        
         <GlassCard className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
