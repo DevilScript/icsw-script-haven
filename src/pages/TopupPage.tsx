@@ -30,18 +30,12 @@ const TopupPage = () => {
 
   const extractVoucherCode = (link: string) => {
     try {
-      // Check if the input is a valid URL
       const url = new URL(link);
-
-      // Extract voucher code from query parameter
       const params = new URLSearchParams(url.search);
       const voucherCode = params.get("v");
-
-      // Validate voucher code existence
       if (!voucherCode) {
         throw new Error("Missing voucher code in link. Use format: https://gift.truemoney.com/campaign/?v=xxxxxxxxxx");
       }
-
       return voucherCode;
     } catch (error) {
       throw new Error(
@@ -74,7 +68,6 @@ const TopupPage = () => {
     try {
       const voucherCode = extractVoucherCode(voucherLink);
 
-      // Call Supabase Edge Function for TrueMoney redemption
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/truemoney-redeem`,
         {
@@ -90,8 +83,15 @@ const TopupPage = () => {
         }
       );
 
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse Edge Function response:", jsonError);
+        throw new Error("Unexpected response from server. Please try again later.");
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
         console.error("Topup API error:", errorData);
         throw new Error(
           errorData.message ||
@@ -100,27 +100,22 @@ const TopupPage = () => {
         );
       }
 
-      const data = await response.json();
+      const data = errorData; // Reuse parsed JSON
       console.log("TrueMoney redeem response:", data);
 
-      // Extract amount from response
       const amount = data.amount || data.data?.amount_baht || 0;
-
       if (amount <= 0) {
         throw new Error("Invalid voucher amount");
       }
 
-      // Refresh user data to update the displayed balance
       await updateUserData();
 
-      // Show success message
       setSuccessMessage(`Successfully added ${amount} THB to your account!`);
       toast({
         title: "Top-up Successful",
         description: `${amount} THB has been added to your account`,
       });
 
-      // Clear the input
       setVoucherLink("");
     } catch (error) {
       console.error("Topup error:", error);
